@@ -8,7 +8,7 @@ The three core actions I wanted PawPal+ to support were adding a pet, scheduling
 
 **b. Design changes**
 
-During the initial design pass, I added `due_date`, `frequency`, and `completed` directly to `Task` because recurring tasks and completion status are central to the assignment. I also made `Scheduler` depend on `Owner` instead of storing its own separate task list, because the owner already connects all pets and tasks. This avoids duplicated data and makes the relationships easier to reason about.
+My design changed when I realized recurring tasks needed more than just a title and time. I added `due_date`, `frequency`, and `completed` to `Task` so the scheduler could know what still needs attention and create the next daily or weekly occurrence. I also added `Owner.find_pet()` because both the UI and scheduler needed a clean way to look up a pet by name. This made the code easier to read than repeatedly looping through pets inside the Streamlit file.
 
 ---
 
@@ -16,13 +16,11 @@ During the initial design pass, I added `due_date`, `frequency`, and `completed`
 
 **a. Constraints and priorities**
 
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
+The scheduler considers scheduled time, priority, pet name, completion status, recurrence, and exact task conflicts. Time matters most for the normal schedule view because pet owners usually want to know what happens next. Priority matters for a second view because some care tasks, like medication, should stand out even if they happen later. Completion status matters so finished tasks do not clutter the open-task workflow.
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+One tradeoff is that conflict detection only checks for exact same date and time matches, not overlapping durations. For example, a 30-minute walk at 8:00 and a 15-minute grooming task at 8:10 would not be flagged even though they overlap in real life. I kept this simpler approach because it is easy to explain, test, and display as a warning without overcomplicating the project. If I had more time, I would add start/end time comparisons.
 
 ---
 
@@ -30,13 +28,11 @@ During the initial design pass, I added `due_date`, `frequency`, and `completed`
 
 **a. How you used AI**
 
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
+I used AI as a planning and implementation teammate. Codex helped turn the assignment requirements into a phased plan, create the UML and class skeletons, implement the OOP backend, wire the Streamlit UI, write tests, and update the documentation. The most helpful prompts were specific and phase-based, such as asking how the `Scheduler` should retrieve all tasks from an `Owner` or how to keep Streamlit objects in `st.session_state`. Keeping design, implementation, testing, and documentation separate made the project easier to review.
 
 **b. Judgment and verification**
 
-- Describe one moment where you did not accept an AI suggestion as-is.
-- How did you evaluate or verify what the AI suggested?
+One suggestion I modified was to keep conflict detection lightweight instead of building a full calendar overlap engine. A more advanced overlap algorithm would be more realistic, but it would also make the code harder to explain for this assignment. I verified the final logic with a CLI demo, automated pytest cases, and a Streamlit startup check. I also reviewed the files manually to make sure the UML, README, and reflection matched the actual code.
 
 ---
 
@@ -44,13 +40,11 @@ During the initial design pass, I added `due_date`, `frequency`, and `completed`
 
 **a. What you tested**
 
-- What behaviors did you test?
-- Why were these tests important?
+I tested task completion, adding tasks to pets, sorting tasks by time, filtering by pet/status, daily recurrence, and conflict detection. These tests are important because they cover the core behaviors PawPal+ promises to users. The recurrence test checks that completing a daily task creates tomorrow's task instead of losing the routine. The conflict test checks that the scheduler returns a warning instead of crashing or silently ignoring duplicate times.
 
 **b. Confidence**
 
-- How confident are you that your scheduler works correctly?
-- What edge cases would you test next if you had more time?
+I am 4 out of 5 confident that the scheduler works correctly for the project requirements. The tests pass and the CLI demo shows sorting, priority ordering, conflicts, and recurrence working together. The main remaining edge cases are overlapping durations, invalid time formats, and saving data after the Streamlit session ends. Those would be my next tests if I extended the project.
 
 ---
 
@@ -58,12 +52,12 @@ During the initial design pass, I added `due_date`, `frequency`, and `completed`
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+The clean separation between backend logic and UI went well. Building `pawpal_system.py` first made it easier to test the system before worrying about Streamlit forms and tables. I am most satisfied with the scheduler methods because they are small, readable, and directly connected to the project requirements.
 
 **b. What you would improve**
 
-- If you had another iteration, what would you improve or redesign?
+In another iteration, I would add JSON persistence so pets and tasks survive after the app closes. I would also improve conflict detection to check overlapping durations, not just exact time matches. The UI could also include edit/delete actions for pets and tasks. Those changes would make PawPal+ feel more like a real pet care app.
 
 **c. Key takeaway**
 
-- What is one important thing you learned about designing systems or working with AI on this project?
+My biggest takeaway is that being the lead architect means deciding what the AI should build, not just accepting everything it suggests. AI was helpful for scaffolding, algorithms, and tests, but I still had to choose the class relationships, keep the design understandable, and verify the behavior. Separate phases helped me stay organized because each chat or task had a clear purpose. The best results came from combining AI speed with human judgment about scope and readability.

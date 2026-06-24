@@ -1,40 +1,32 @@
 # AI Interactions Log
 
-> **Stretch features only.** Only fill in the sections that apply to stretch features you attempted. If you did not attempt a stretch feature, leave its section blank or delete it. This file is not required for the core project.
-
----
-
-## Agent Workflow (SF7)
-
-> Document your experience using an AI agent (e.g., Cursor Agent, Claude, Copilot) to make multi-step changes autonomously.
+## Agent Workflow
 
 **What task did you give the agent?**
 
-<!-- Describe the goal you asked the agent to accomplish -->
+I asked Codex to help me complete the PawPal+ project from the CodePath instructions. The work was split into phases: create a UML design and class skeleton, implement the OOP backend, connect the backend to Streamlit, add scheduling algorithms, write pytest tests, and finish the README/reflection. I wanted the agent to keep the commits meaningful so the project history showed design, implementation, testing, and documentation progress.
 
 **What did the agent do?**
 
-<!-- List the steps the agent took (files edited, commands run, etc.) -->
+Codex created `pawpal_system.py` with the `Owner`, `Pet`, `Task`, and `Scheduler` classes, updated `diagrams/uml.mmd`, and added `diagrams/uml_final.mmd`. It implemented sorting by time, priority sorting, filtering, recurrence, conflict detection, and task completion. It also created `main.py` for CLI verification, rewrote `app.py` so Streamlit uses `st.session_state`, added `tests/test_pawpal.py`, ran `python main.py`, ran `python -m pytest`, and updated `README.md` and `reflection.md`.
 
 **What did you have to verify or fix manually?**
 
-<!-- Describe anything the agent got wrong or that required human review -->
+I reviewed the design choices and kept the conflict detection intentionally simple so it only warns on exact date/time matches. I also checked that the README output matched the actual terminal output and that the final UML matched the implemented methods. One thing I watched for was overly complex scheduling logic; I wanted the solution to be understandable for a first OOP scheduler project, not a full calendar system.
 
 ---
 
-## Prompt Comparison (SF11)
-
-> Compare two different prompts (or two different models) on the same task.
+## Prompt Comparison
 
 | | Option A | Option B |
 |-|----------|----------|
-| **Model / tool used** | | |
-| **Prompt** | | |
-| **Response summary** | | |
-| **What was useful** | | |
-| **Problems noticed** | | |
-| **Decision** | | |
+| **Model / tool used** | Codex for implementation planning | Codex for testing review |
+| **Prompt** | "Build PawPal+ from the assignment phases and keep the backend separate from the UI." | "What should be tested for a pet scheduler with sorting, recurring tasks, and conflicts?" |
+| **Response summary** | Suggested creating `Owner`, `Pet`, `Task`, and `Scheduler`, then wiring Streamlit to those classes through session state. | Suggested tests for completion, adding tasks, sorting, recurrence, filtering, and conflict detection. |
+| **What was useful** | The phased approach kept the project from becoming one giant edit. | The test plan mapped directly to the assignment requirements. |
+| **Problems noticed** | A more advanced conflict algorithm would have been possible but too large for the required scope. | Some edge cases, like overlapping durations, were noted but not implemented. |
+| **Decision** | Keep a clean OOP design with simple exact-time conflict warnings. | Test the required behavior now and document future edge cases in the reflection. |
 
 **Which approach did you use in your final implementation and why?**
 
-<!-- Your conclusion -->
+I used the phased implementation approach because it matched the CodePath instructions and made each commit easier to understand. I also used the testing review to decide which behaviors were most important to verify before submitting. I rejected extra complexity when it would make the project harder to explain, especially around calendar-style overlap detection.
