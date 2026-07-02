@@ -85,6 +85,35 @@ with left:
             owner.remove_pet(pet_to_delete)
             st.success(f"Deleted {pet_to_delete.name} and their tasks.")
             st.rerun()
+
+        st.markdown("**Edit a pet**")
+        pet_to_edit = st.selectbox(
+            "Pet to edit",
+            owner.pets,
+            format_func=lambda pet: pet.name,
+            key="edit_pet_select",
+        )
+        with st.form("edit_pet_form"):
+            edited_name = st.text_input("Name", value=pet_to_edit.name)
+            species_options = ["dog", "cat", "other"]
+            edited_species = st.selectbox(
+                "Species",
+                species_options,
+                index=species_options.index(pet_to_edit.species)
+                if pet_to_edit.species in species_options
+                else species_options.index("other"),
+            )
+            edited_age = st.number_input(
+                "Age", min_value=0, max_value=40, value=pet_to_edit.age or 0
+            )
+            submitted_edit = st.form_submit_button("Save changes")
+
+        if submitted_edit and edited_name.strip():
+            pet_to_edit.name = edited_name.strip()
+            pet_to_edit.species = edited_species
+            pet_to_edit.age = int(edited_age)
+            st.success(f"Updated {pet_to_edit.name}.")
+            st.rerun()
     else:
         st.info("Add a pet to start scheduling care tasks.")
 
@@ -194,6 +223,30 @@ if owner.pets:
             st.rerun()
     else:
         st.info("All tasks are complete.")
+
+    st.subheader("Delete or Reopen a Task")
+    all_tasks = scheduler.sort_by_time(scheduler.filter_tasks())
+    if all_tasks:
+        selected_task_pair = st.selectbox(
+            "Task",
+            all_tasks,
+            format_func=lambda pair: f"{pair[0].name} | {pair[1].title} ({'Done' if pair[1].completed else 'Open'})",
+        )
+        selected_pet, selected_task = selected_task_pair
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if selected_task.completed and st.button("Reopen task"):
+                selected_task.mark_incomplete()
+                st.success(f"Reopened {selected_task.title}.")
+                st.rerun()
+        with col2:
+            if st.button("Delete task"):
+                selected_pet.remove_task(selected_task)
+                st.success(f"Deleted {selected_task.title}.")
+                st.rerun()
+    else:
+        st.info("No tasks yet.")
 
 owner.save_to_json(str(DATA_PATH))
 st.caption(f"Data is auto-saved to `{DATA_PATH}` after every change, so it persists between app runs.")

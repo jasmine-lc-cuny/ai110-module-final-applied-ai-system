@@ -9,7 +9,8 @@ verified through `main.py` and pytest before being connected to the UI in
 ## Features
 
 - Add an owner, pets, and scheduled care tasks.
-- Delete a pet (and all their tasks) from the Streamlit UI, disambiguated by species/age/task count so similarly-named pets aren't mixed up.
+- Edit or delete a pet from the Streamlit UI (deletion disambiguated by species/age/task count so similarly-named pets aren't mixed up).
+- Delete a task, or reopen one that was marked complete by mistake.
 - Track task time, duration, priority, frequency, due date, and completion.
 - View schedules sorted by time or by priority.
 - Filter tasks by pet and completion status.
@@ -51,7 +52,7 @@ PawPal+ schedule for Jordan
 | :-----| :-----| :-------| :-----------------------| :--------| :--------| :---------| :----------| :------|
 | 07:30 | Luna  | cat     | 🍖 Breakfast            | 10 min   | high     | daily     | 2026-07-02 | open   |
 | 08:00 | Mochi | dog     | 🐕 Morning walk         | 30 min   | high     | daily     | 2026-07-02 | open   |
-| 08:00 | Luna  | cat     | 🧼 Brush coat           | 15 min   | medium   | once      | 2026-07-02 | open   |
+| 08:00 | Luna  | cat     | 🪮 Brush coat           | 15 min   | medium   | once      | 2026-07-02 | open   |
 | 12:00 | Mochi | dog     | 💊 Heartworm medication | 5 min    | high     | once      | 2026-07-02 | open   |
 
 ❗ High Priority First
@@ -61,7 +62,7 @@ PawPal+ schedule for Jordan
 | 07:30 | Luna  | cat     | 🍖 Breakfast            | 10 min   | high     | daily     | 2026-07-02 | open   |
 | 08:00 | Mochi | dog     | 🐕 Morning walk         | 30 min   | high     | daily     | 2026-07-02 | open   |
 | 12:00 | Mochi | dog     | 💊 Heartworm medication | 5 min    | high     | once      | 2026-07-02 | open   |
-| 08:00 | Luna  | cat     | 🧼 Brush coat           | 15 min   | medium   | once      | 2026-07-02 | open   |
+| 08:00 | Luna  | cat     | 🪮 Brush coat           | 15 min   | medium   | once      | 2026-07-02 | open   |
 
 🐾 Mochi's Open Tasks
 
@@ -100,7 +101,7 @@ Reloaded Schedule (from main_demo_data.json)
 | Time  | Pet   | Species | Task                    | Duration | Priority | Frequency | Due Date   | Status |
 | :-----| :-----| :-------| :-----------------------| :--------| :--------| :---------| :----------| :------|
 | 07:30 | Luna  | cat     | 🍖 Breakfast            | 10 min   | high     | daily     | 2026-07-02 | open   |
-| 08:00 | Luna  | cat     | 🧼 Brush coat           | 15 min   | medium   | once      | 2026-07-02 | open   |
+| 08:00 | Luna  | cat     | 🪮 Brush coat           | 15 min   | medium   | once      | 2026-07-02 | open   |
 | 12:00 | Mochi | dog     | 💊 Heartworm medication | 5 min    | high     | once      | 2026-07-02 | open   |
 ```
 
@@ -158,11 +159,11 @@ time zones, overlapping durations, and saved data across app restarts.
 ## Demo Walkthrough
 
 1. The user enters their owner name in the sidebar.
-2. The user adds pets such as Mochi the dog and Luna the cat, and can delete a pet (with all its tasks) from a dropdown under the pets table.
+2. The user adds pets such as Mochi the dog and Luna the cat, edits a pet's name/species/age, or deletes a pet (with all its tasks) from dropdowns under the pets table.
 3. The user schedules care tasks with a time, duration, priority, and frequency.
 4. The "Care Schedule" table displays all tasks matching the sidebar's pet/status filters, sorted by time or priority.
 5. A "Today's Highlights" section below it mirrors the CLI's views for tasks due today — 📅 Today's Schedule, ❗ High Priority First, 🚨 Next Urgent Task, and ⭐ Today's Top 3 Priorities — plus ⚠️ Conflict Warnings when two open tasks share the same date and time.
-6. When the user marks a daily or weekly task complete, PawPal+ creates the next occurrence automatically.
+6. When the user marks a daily or weekly task complete, PawPal+ creates the next occurrence automatically. A task can also be deleted outright, or reopened if it was marked complete by mistake.
 
 Sample CLI output from `python main.py` (same run shown in the Sample Output section above):
 
@@ -175,7 +176,7 @@ PawPal+ schedule for Jordan
 | :-----| :-----| :-------| :-----------------------| :--------| :--------| :---------| :----------| :------|
 | 07:30 | Luna  | cat     | 🍖 Breakfast            | 10 min   | high     | daily     | 2026-07-02 | open   |
 | 08:00 | Mochi | dog     | 🐕 Morning walk         | 30 min   | high     | daily     | 2026-07-02 | open   |
-| 08:00 | Luna  | cat     | 🧼 Brush coat           | 15 min   | medium   | once      | 2026-07-02 | open   |
+| 08:00 | Luna  | cat     | 🪮 Brush coat           | 15 min   | medium   | once      | 2026-07-02 | open   |
 | 12:00 | Mochi | dog     | 💊 Heartworm medication | 5 min    | high     | once      | 2026-07-02 | open   |
 
 ❗ High Priority First
@@ -185,7 +186,7 @@ PawPal+ schedule for Jordan
 | 07:30 | Luna  | cat     | 🍖 Breakfast            | 10 min   | high     | daily     | 2026-07-02 | open   |
 | 08:00 | Mochi | dog     | 🐕 Morning walk         | 30 min   | high     | daily     | 2026-07-02 | open   |
 | 12:00 | Mochi | dog     | 💊 Heartworm medication | 5 min    | high     | once      | 2026-07-02 | open   |
-| 08:00 | Luna  | cat     | 🧼 Brush coat           | 15 min   | medium   | once      | 2026-07-02 | open   |
+| 08:00 | Luna  | cat     | 🪮 Brush coat           | 15 min   | medium   | once      | 2026-07-02 | open   |
 
 🐾 Mochi's Open Tasks
 
@@ -224,7 +225,7 @@ Reloaded Schedule (from main_demo_data.json)
 | Time  | Pet   | Species | Task                    | Duration | Priority | Frequency | Due Date   | Status |
 | :-----| :-----| :-------| :-----------------------| :--------| :--------| :---------| :----------| :------|
 | 07:30 | Luna  | cat     | 🍖 Breakfast            | 10 min   | high     | daily     | 2026-07-02 | open   |
-| 08:00 | Luna  | cat     | 🧼 Brush coat           | 15 min   | medium   | once      | 2026-07-02 | open   |
+| 08:00 | Luna  | cat     | 🪮 Brush coat           | 15 min   | medium   | once      | 2026-07-02 | open   |
 | 12:00 | Mochi | dog     | 💊 Heartworm medication | 5 min    | high     | once      | 2026-07-02 | open   |
 ```
 
@@ -235,7 +236,7 @@ Reloaded Schedule (from main_demo_data.json)
 | 1. Advanced algorithmic capability | ✅ Done | `Scheduler.next_urgent_task()` and `Scheduler.top_priorities(n)` add a distinct ranking capability beyond the four base requirements. See the "Agent Workflow" section in `ai_interactions.md`. |
 | 2. Data persistence (JSON) | ✅ Done | `Owner.save_to_json()`/`Owner.load_from_json()` (see Data Persistence section above); `main.py` and `app.py` persist to separate files (`main_demo_data.json` vs. `data.json`) so one never overwrites the other. |
 | 3. Advanced priority scheduling | ✅ Done | `Task.priority` (`low`/`medium`/`high`) plus `Scheduler.sort_by_priority_then_time()`; see "❗ High Priority First" in the Sample Output above. |
-| 4. Professional UI/output formatting | ✅ Done | **(a) emojis per task type** — `task_type_icon()` in `pawpal_system.py` picks a different icon per task (🐕 walk, 💊 medication, 🍖 feeding, 🧼 grooming, 🏥 vet), plus `main.py` section headers (📅 ❗ 🚨 ⭐ ⚠️ 🔁). **(b) color-coded status indicators** — `st.success()`/`st.warning()`/`st.info()` in the Streamlit UI render in distinct colors. **(c) structured CLI tables** — `main.py` uses `prettytable.PrettyTable` (`requirements.txt`) instead of plain printed lines. |
+| 4. Professional UI/output formatting | ✅ Done | **(a) emojis per task type** — `task_type_icon()` in `pawpal_system.py` picks a different icon per task (🐕 walk, 💊 medication, 🍖 feeding, 💅 nail trim, ✂️ haircut, 🧼 wash/bath, 🪮 brushing, 🏥 vet), plus `main.py` section headers (📅 ❗ 🚨 ⭐ ⚠️ 🔁). **(b) color-coded status indicators** — `st.success()`/`st.warning()`/`st.info()` in the Streamlit UI render in distinct colors. **(c) structured CLI tables** — `main.py` uses `prettytable.PrettyTable` (`requirements.txt`) instead of plain printed lines. |
 | 5. Multi-model prompt comparison | ✅ Done | Compared Codex vs. Claude on rescheduling late-completed weekly tasks; see the "Prompt Comparison" section in `ai_interactions.md`. The winning hybrid approach was adopted into `Task.next_occurrence()`/`Scheduler.mark_task_complete()`. |
 
 ## Architecture

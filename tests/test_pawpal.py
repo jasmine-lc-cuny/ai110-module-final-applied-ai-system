@@ -7,7 +7,10 @@ def test_task_type_icon_varies_by_task_title():
     assert task_type_icon("Morning walk") == "🐕"
     assert task_type_icon("Heartworm medication") == "💊"
     assert task_type_icon("Breakfast") == "🍖"
-    assert task_type_icon("Brush coat") == "🧼"
+    assert task_type_icon("Brush coat") == "🪮"
+    assert task_type_icon("Wash") == "🧼"
+    assert task_type_icon("Hair Cut") == "✂️"
+    assert task_type_icon("Trim Nails") == "💅"
     assert task_type_icon("Vet checkup") == "🏥"
     assert task_type_icon("Something unrelated") == "🐾"
 
@@ -20,12 +23,40 @@ def test_task_completion_marks_status():
     assert task.completed is True
 
 
+def test_task_mark_incomplete_reopens_a_done_task():
+    task = Task("Feed breakfast", "07:30", 10, completed=True)
+
+    task.mark_incomplete()
+
+    assert task.completed is False
+
+
 def test_adding_task_increases_pet_task_count():
     pet = Pet("Mochi", "dog")
 
     pet.add_task(Task("Morning walk", "08:00", 30))
 
     assert len(pet.tasks) == 1
+
+
+def test_remove_task_deletes_the_correct_task_among_duplicates():
+    pet = Pet("Mochi", "dog")
+    walk = Task("Morning walk", "08:00", 30, priority="high")
+    duplicate_walk = Task("Morning walk", "08:00", 30, priority="low")
+    pet.add_task(walk)
+    pet.add_task(duplicate_walk)
+
+    removed = pet.remove_task(duplicate_walk)
+
+    assert removed is True
+    assert pet.tasks == [walk]
+
+
+def test_remove_task_returns_false_when_task_not_found():
+    pet = Pet("Mochi", "dog")
+    pet.add_task(Task("Morning walk", "08:00", 30))
+
+    assert pet.remove_task(Task("Ghost task", "00:00", 1)) is False
 
 
 def test_remove_pet_deletes_the_correct_pet_among_similarly_named_ones():

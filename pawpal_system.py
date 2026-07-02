@@ -8,13 +8,17 @@ from datetime import date, timedelta
 PRIORITY_ORDER = {"high": 0, "medium": 1, "low": 2}
 
 # Keyword -> icon lookup used by Task.summary() to show a different emoji per
-# task type (walk, medication, feeding, grooming, vet visit), checked in order
-# so more specific keywords win. Falls back to a generic paw print.
+# task type (walk, medication, feeding, nail trim, haircut, bath, brushing,
+# vet visit), checked in order so more specific keywords win. Falls back to
+# a generic paw print.
 TASK_TYPE_ICONS: list[tuple[tuple[str, ...], str]] = [
     (("walk", "hike", "play", "exercise"), "🐕"),
     (("medic", "med", "pill", "heartworm", "vaccine", "dose"), "💊"),
     (("feed", "breakfast", "lunch", "dinner", "meal", "snack"), "🍖"),
-    (("groom", "brush", "bath", "nail", "trim"), "🧼"),
+    (("nail", "trim"), "💅"),
+    (("haircut", "hair cut", "cut"), "✂️"),
+    (("wash", "bath"), "🧼"),
+    (("brush", "comb", "groom"), "🪮"),
     (("vet", "appointment", "checkup", "exam"), "🏥"),
 ]
 
@@ -43,6 +47,10 @@ class Task:
     def mark_complete(self):
         """Mark this task as complete."""
         self.completed = True
+
+    def mark_incomplete(self):
+        """Reopen this task by marking it not yet complete."""
+        self.completed = False
 
     def next_occurrence(self, completed_on: date | None = None) -> Task | None:
         """Create the next daily/weekly occurrence, skipping past dates a late completion already covers."""
@@ -116,6 +124,13 @@ class Pet:
     def add_task(self, task: Task):
         """Add a task to this pet."""
         self.tasks.append(task)
+
+    def remove_task(self, task: Task) -> bool:
+        """Remove a task from this pet's list; returns whether it was found."""
+        if task in self.tasks:
+            self.tasks.remove(task)
+            return True
+        return False
 
     def incomplete_tasks(self) -> list[Task]:
         """Return this pet's incomplete tasks."""
