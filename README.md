@@ -158,10 +158,10 @@ time zones, overlapping durations, and saved data across app restarts.
 ## Demo Walkthrough
 
 1. The user enters their owner name in the sidebar.
-2. The user adds pets such as Mochi the dog and Luna the cat.
+2. The user adds pets such as Mochi the dog and Luna the cat, and can delete a pet (with all its tasks) from a dropdown under the pets table.
 3. The user schedules care tasks with a time, duration, priority, and frequency.
-4. PawPal+ displays the schedule as a table sorted by time or priority.
-5. The user filters tasks by pet/status and sees conflict warnings when two open tasks share the same date and time.
+4. The "Care Schedule" table displays all tasks matching the sidebar's pet/status filters, sorted by time or priority.
+5. A "Today's Highlights" section below it mirrors the CLI's views for tasks due today — 📅 Today's Schedule, ❗ High Priority First, 🚨 Next Urgent Task, and ⭐ Today's Top 3 Priorities — plus ⚠️ Conflict Warnings when two open tasks share the same date and time.
 6. When the user marks a daily or weekly task complete, PawPal+ creates the next occurrence automatically.
 
 Sample CLI output from `python main.py` (same run shown in the Sample Output section above):

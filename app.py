@@ -140,6 +140,39 @@ if display_tasks:
 else:
     st.info("No tasks match the current filters.")
 
+st.divider()
+st.subheader("Today's Highlights")
+
+todays_tasks = scheduler.todays_schedule()
+
+st.markdown("**📅 Today's Schedule**")
+if todays_tasks:
+    st.table(task_rows(todays_tasks))
+else:
+    st.info("No open tasks due today.")
+
+st.markdown("**❗ High Priority First**")
+high_priority_today = scheduler.sort_by_priority_then_time(todays_tasks)
+if high_priority_today:
+    st.table(task_rows(high_priority_today))
+else:
+    st.info("No open tasks due today.")
+
+st.markdown("**🚨 Next Urgent Task**")
+urgent = scheduler.next_urgent_task()
+if urgent:
+    st.table(task_rows([urgent]))
+else:
+    st.info("No open tasks due today.")
+
+st.markdown("**⭐ Today's Top 3 Priorities**")
+top_priorities = scheduler.top_priorities(3)
+if top_priorities:
+    st.table(task_rows(top_priorities))
+else:
+    st.info("No open tasks due today.")
+
+st.markdown("**⚠️ Conflict Warnings**")
 conflicts = scheduler.detect_conflicts(scheduler.filter_tasks(completed=False))
 if conflicts:
     for warning in conflicts:
