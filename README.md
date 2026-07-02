@@ -17,7 +17,7 @@ verified through `main.py` and pytest before being connected to the UI in
 - Mark tasks complete and automatically create the next daily or weekly task.
 - Surface today's single next urgent task and a top-3 priority shortlist.
 - Use a Streamlit interface backed by `st.session_state` so pets and tasks stay available during the browser session.
-- Persist all pets and tasks to `data.json` so they survive between application runs.
+- Persist all pets and tasks to `data.json` (Streamlit app) so they survive between application runs, separately from `main.py`'s own `main_demo_data.json`.
 - Show a different emoji per task type (walk, medication, feeding, grooming, vet), color-coded status messages in the Streamlit UI, and `PrettyTable`-rendered tables in the CLI.
 
 ## Setup
@@ -94,8 +94,8 @@ PawPal+ schedule for Jordan
 | :-----| :-----| :---------------| :--------| :--------| :---------| :----------| :------|
 | 08:00 | Mochi | 🐕 Morning walk | 30 min   | high     | daily     | 2026-07-03 | open   |
 
-💾 Saved to data.json and reloaded a fresh Owner from disk
-Reloaded Schedule (from data.json)
+💾 Saved to main_demo_data.json and reloaded a fresh Owner from disk
+Reloaded Schedule (from main_demo_data.json)
 
 | Time  | Pet   | Task                    | Duration | Priority | Frequency | Due Date   | Status |
 | :-----| :-----| :-----------------------| :--------| :--------| :---------| :----------| :------|
@@ -118,11 +118,12 @@ Reloaded Schedule (from data.json)
 
 ## Data Persistence
 
-PawPal+ saves its state to `data.json` so pets and tasks survive between runs, instead of resetting every time the app or script restarts.
+PawPal+ saves its state to JSON so pets and tasks survive between runs, instead of resetting every time the app or script restarts.
 
 - **What was added:** `Task.to_dict()`/`Task.from_dict()`, `Pet.to_dict()`/`Pet.from_dict()`, and `Owner.to_dict()`/`Owner.from_dict()` convert the object graph to and from plain dictionaries (dates are stored as ISO strings). `Owner.save_to_json(path)` writes that dictionary to a JSON file with `json.dump`; `Owner.load_from_json(path)` (a classmethod) reads it back and rebuilds a full `Owner` → `Pet` → `Task` object graph.
-- **Files modified:** `pawpal_system.py` (serialization methods), `main.py` (demonstrates a save → reload round trip at the end of the CLI run, see Sample Output above), `app.py` (loads `data.json` on first load of a session if it exists, and auto-saves after every render so pet/task changes survive an app restart), `.gitignore` (excludes the generated `data.json` so runtime data isn't committed), `tests/test_pawpal.py` (`test_save_and_load_json_round_trip` verifies a full save/reload cycle preserves pet details and task fields, including dates and recurrence).
-- **Workflow:** in the CLI, `python main.py` builds the demo data, mutates it, saves it to `data.json`, then reloads a brand-new `Owner` straight from that file to prove the round trip works. In the Streamlit app, adding a pet, adding a task, or completing a task immediately persists to `data.json`; reloading the page (a fresh Streamlit session) reads that file back in instead of starting empty.
+- **Two separate files, on purpose:** `main.py`'s CLI demo saves to `main_demo_data.json`, while `app.py`'s Streamlit UI saves to `data.json`. They used to share the same `data.json`, which meant running the CLI demo (scripted `Mochi`/`Luna` data) would silently overwrite whatever real pets/tasks were saved from the live Streamlit app, and vice versa. Splitting the filenames means running one never touches the other's data.
+- **Files modified:** `pawpal_system.py` (serialization methods), `main.py` (demonstrates a save → reload round trip against `main_demo_data.json` at the end of the CLI run, see Sample Output above), `app.py` (loads `data.json` on first load of a session if it exists, and auto-saves after every render so pet/task changes survive an app restart), `.gitignore` (excludes both generated files so runtime data isn't committed), `tests/test_pawpal.py` (`test_save_and_load_json_round_trip` verifies a full save/reload cycle preserves pet details and task fields, including dates and recurrence, using a temp file so it never touches either real file).
+- **Workflow:** in the CLI, `python main.py` builds the demo data, mutates it, saves it to `main_demo_data.json`, then reloads a brand-new `Owner` straight from that file to prove the round trip works. In the Streamlit app, adding a pet, adding a task, or completing a task immediately persists to `data.json`; reloading the page (a fresh Streamlit session) reads that file back in instead of starting empty.
 
 ## Testing PawPal+
 
@@ -217,8 +218,8 @@ PawPal+ schedule for Jordan
 | :-----| :-----| :---------------| :--------| :--------| :---------| :----------| :------|
 | 08:00 | Mochi | 🐕 Morning walk | 30 min   | high     | daily     | 2026-07-03 | open   |
 
-💾 Saved to data.json and reloaded a fresh Owner from disk
-Reloaded Schedule (from data.json)
+💾 Saved to main_demo_data.json and reloaded a fresh Owner from disk
+Reloaded Schedule (from main_demo_data.json)
 
 | Time  | Pet   | Task                    | Duration | Priority | Frequency | Due Date   | Status |
 | :-----| :-----| :-----------------------| :--------| :--------| :---------| :----------| :------|
@@ -232,7 +233,7 @@ Reloaded Schedule (from data.json)
 | Challenge | Status | Notes |
 |---|---|---|
 | 1. Advanced algorithmic capability | ✅ Done | `Scheduler.next_urgent_task()` and `Scheduler.top_priorities(n)` add a distinct ranking capability beyond the four base requirements. See the "Agent Workflow" section in `ai_interactions.md`. |
-| 2. Data persistence (JSON) | ✅ Done | `Owner.save_to_json()`/`Owner.load_from_json()` (see Data Persistence section above); pets/tasks survive both `main.py` runs and Streamlit restarts via `data.json`. |
+| 2. Data persistence (JSON) | ✅ Done | `Owner.save_to_json()`/`Owner.load_from_json()` (see Data Persistence section above); `main.py` and `app.py` persist to separate files (`main_demo_data.json` vs. `data.json`) so one never overwrites the other. |
 | 3. Advanced priority scheduling | ✅ Done | `Task.priority` (`low`/`medium`/`high`) plus `Scheduler.sort_by_priority_then_time()`; see "❗ High Priority First" in the Sample Output above. |
 | 4. Professional UI/output formatting | ✅ Done | **(a) emojis per task type** — `task_type_icon()` in `pawpal_system.py` picks a different icon per task (🐕 walk, 💊 medication, 🍖 feeding, 🧼 grooming, 🏥 vet), plus `main.py` section headers (📅 ❗ 🚨 ⭐ ⚠️ 🔁). **(b) color-coded status indicators** — `st.success()`/`st.warning()`/`st.info()` in the Streamlit UI render in distinct colors. **(c) structured CLI tables** — `main.py` uses `prettytable.PrettyTable` (`requirements.txt`) instead of plain printed lines. |
 | 5. Multi-model prompt comparison | ✅ Done | Compared Codex vs. Claude on rescheduling late-completed weekly tasks; see the "Prompt Comparison" section in `ai_interactions.md`. The winning hybrid approach was adopted into `Task.next_occurrence()`/`Scheduler.mark_task_complete()`. |

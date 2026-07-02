@@ -100,12 +100,14 @@ def main():
     ]
     print_schedule("🔁 Recurring Task Created", next_walks)
 
-    data_path = "data.json"
+    # Uses its own file, separate from app.py's data.json, so running this
+    # CLI demo never overwrites real data saved by the Streamlit app.
+    data_path = "main_demo_data.json"
     owner.save_to_json(data_path)
     reloaded_owner = Owner.load_from_json(data_path)
     reloaded_scheduler = Scheduler(reloaded_owner)
     print(f"💾 Saved to {data_path} and reloaded a fresh Owner from disk")
-    print_schedule("Reloaded Schedule (from data.json)", reloaded_scheduler.todays_schedule())
+    print_schedule("Reloaded Schedule (from main_demo_data.json)", reloaded_scheduler.todays_schedule())
 
 
 if __name__ == "__main__":
