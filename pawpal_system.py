@@ -73,6 +73,7 @@ class Task:
     frequency: str = "once"
     due_date: date = field(default_factory=date.today)
     completed: bool = False
+    notes: str | None = None
 
     def mark_complete(self):
         """Mark this task as complete."""
@@ -126,6 +127,7 @@ class Task:
             "frequency": self.frequency,
             "due_date": self.due_date.isoformat(),
             "completed": self.completed,
+            "notes": self.notes,
         }
 
     @classmethod
@@ -139,6 +141,36 @@ class Task:
             frequency=data["frequency"],
             due_date=date.fromisoformat(data["due_date"]),
             completed=data["completed"],
+            notes=data.get("notes"),
+        )
+
+
+@dataclass
+class Document:
+    """Represent one uploaded file (x-ray, lab result, etc.) attached to a pet."""
+
+    category: str
+    filename: str
+    path: str
+    uploaded_at: date = field(default_factory=date.today)
+
+    def to_dict(self) -> dict:
+        """Convert this document to a JSON-serializable dictionary."""
+        return {
+            "category": self.category,
+            "filename": self.filename,
+            "path": self.path,
+            "uploaded_at": self.uploaded_at.isoformat(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Document:
+        """Rebuild a Document from a dictionary produced by to_dict()."""
+        return cls(
+            category=data["category"],
+            filename=data["filename"],
+            path=data["path"],
+            uploaded_at=date.fromisoformat(data["uploaded_at"]),
         )
 
 
@@ -151,6 +183,11 @@ class Pet:
     age: int | None = None
     sex: str | None = None
     tasks: list[Task] = field(default_factory=list)
+    weight: str | None = None
+    diet_good: list[str] = field(default_factory=list)
+    diet_bad: list[str] = field(default_factory=list)
+    chronic_conditions: list[str] = field(default_factory=list)
+    documents: list[Document] = field(default_factory=list)
 
     def add_task(self, task: Task):
         """Add a task to this pet."""
@@ -175,6 +212,11 @@ class Pet:
             "age": self.age,
             "sex": self.sex,
             "tasks": [task.to_dict() for task in self.tasks],
+            "weight": self.weight,
+            "diet_good": self.diet_good,
+            "diet_bad": self.diet_bad,
+            "chronic_conditions": self.chronic_conditions,
+            "documents": [document.to_dict() for document in self.documents],
         }
 
     @classmethod
@@ -186,6 +228,14 @@ class Pet:
             age=data["age"],
             sex=data.get("sex"),
             tasks=[Task.from_dict(task_data) for task_data in data["tasks"]],
+            weight=data.get("weight"),
+            diet_good=data.get("diet_good", []),
+            diet_bad=data.get("diet_bad", []),
+            chronic_conditions=data.get("chronic_conditions", []),
+            documents=[
+                Document.from_dict(document_data)
+                for document_data in data.get("documents", [])
+            ],
         )
 
 
@@ -369,3 +419,22 @@ class Scheduler:
         """Return today's top n open tasks ranked by priority then time."""
         task_pairs = tasks if tasks is not None else self.todays_schedule()
         return self.sort_by_priority_then_time(task_pairs)[:n]
+
+    def completion_rate(self, pet_name: str | None = None) -> float:
+        """Return the percentage of tasks marked complete, optionally scoped to one pet."""
+        task_pairs = self.filter_tasks(pet_name=pet_name)
+        if not task_pairs:
+            return 0.0
+        completed_count = sum(1 for _, task in task_pairs if task.completed)
+        return round(completed_count / len(task_pairs) * 100, 1)
+
+    def upcoming_tasks(self, n: int = 5) -> list[tuple[Pet, Task]]:
+        """Return the next n open tasks due today or later, soonest first."""
+        today = date.today()
+        open_upcoming = [
+            (pet, task)
+            for pet, task in self.owner.all_tasks()
+            if task.due_date >= today and not task.completed
+        ]
+        ranked = sorted(open_upcoming, key=lambda pair: (pair[1].due_date, pair[1].time))
+        return ranked[:n]

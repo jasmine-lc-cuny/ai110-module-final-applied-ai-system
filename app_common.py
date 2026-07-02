@@ -1,11 +1,15 @@
 """Shared state and UI helpers used across every page of the multi-page app."""
 
+import re
+import uuid
 from pathlib import Path
 
 import streamlit as st
 
 from pawpal_system import (
+    Document,
     Owner,
+    Pet,
     Scheduler,
     Task,
     format_time_12h,
@@ -16,7 +20,31 @@ from pawpal_system import (
 )
 
 DATA_PATH = Path("data.json")
+UPLOADS_PATH = Path("uploads")
 NEW_OWNER_CHOICE = "+ Add new owner"
+
+# Categories offered when uploading a Document, mirroring the mockup's
+# document groupings.
+DOCUMENT_CATEGORIES = [
+    "Digital radiography",
+    "Dental digital x-ray",
+    "In-house laboratory diagnostics",
+    "Other",
+]
+
+# Colors for the weekly-schedule timeline, assigned by a pet's index in
+# owner.pets (not a name hash) so the mapping is deterministic and never
+# collides. Chosen for contrast against white pill text.
+PET_TIMELINE_COLORS = [
+    "#3B5BDB",  # indigo
+    "#099268",  # teal
+    "#E8590C",  # orange
+    "#C2255C",  # pink
+    "#6741D9",  # violet
+    "#0C8599",  # cyan
+    "#E03131",  # red
+    "#5C940D",  # lime
+]
 
 # Common care tasks offered in "Schedule a Task" dropdowns, covering every
 # category task_type_icon() recognizes, plus "Other (custom)" for anything else.
@@ -149,6 +177,33 @@ def save_owners(owners: list[Owner]) -> None:
 def save_owner(owner: Owner) -> None:
     """Persist all owners to data.json — call after any mutation, on every page."""
     save_owners(get_owners())
+
+
+def slugify_for_path(name: str) -> str:
+    """Turn an owner/pet name into a filesystem-safe folder name segment."""
+    slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+    return slug or "unnamed"
+
+
+def save_uploaded_document(owner: Owner, pet: Pet, category: str, uploaded_file) -> Document:
+    """Save an st.file_uploader() file to disk and return a Document referencing it."""
+    pet_dir = UPLOADS_PATH / f"{slugify_for_path(owner.name)}__{slugify_for_path(pet.name)}"
+    pet_dir.mkdir(parents=True, exist_ok=True)
+
+    # Prefix with a short unique token so repeat uploads of the same
+    # filename (e.g. two different "xray.png") never overwrite each other
+    # on disk, while Document.filename keeps the original name for display.
+    stored_name = f"{uuid.uuid4().hex[:8]}_{uploaded_file.name}"
+    stored_path = pet_dir / stored_name
+    with open(stored_path, "wb") as file:
+        file.write(uploaded_file.getbuffer())
+
+    return Document(category=category, filename=uploaded_file.name, path=str(stored_path))
+
+
+def delete_uploaded_document(document: Document) -> None:
+    """Remove an uploaded document's file from disk, if it still exists."""
+    Path(document.path).unlink(missing_ok=True)
 
 
 def task_rows(task_pairs):

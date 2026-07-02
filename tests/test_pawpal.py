@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 from pawpal_system import (
+    Document,
     Owner,
     Pet,
     Scheduler,
@@ -302,3 +303,127 @@ def test_pet_from_dict_defaults_sex_to_none_for_old_data_without_it():
     pet = Pet.from_dict(old_style_data)
 
     assert pet.sex is None
+
+
+def test_document_to_dict_and_from_dict_round_trip():
+    document = Document(
+        category="Digital radiography",
+        filename="chest.png",
+        path="uploads/mochi/chest.png",
+        uploaded_at=date(2026, 1, 15),
+    )
+
+    loaded = Document.from_dict(document.to_dict())
+
+    assert loaded == document
+
+
+def test_pet_round_trips_all_new_fields_including_documents():
+    pet = Pet(
+        "Mochi",
+        "dog",
+        age=4,
+        sex="Male",
+        weight="12 kg",
+        diet_good=["Chicken", "Rice"],
+        diet_bad=["Chocolate"],
+        chronic_conditions=["Arthritis: joint pain in cold weather"],
+        documents=[
+            Document("Lab diagnostics", "bloodwork.pdf", "uploads/mochi/bloodwork.pdf")
+        ],
+    )
+
+    loaded = Pet.from_dict(pet.to_dict())
+
+    assert loaded == pet
+
+
+def test_pet_from_dict_defaults_new_fields_for_old_data_without_them():
+    # Same backward-compatibility need as the "sex" test above, but for the
+    # dashboard fields added later — old data.json entries won't have these
+    # keys at all.
+    old_style_data = {"name": "Mochi", "species": "dog", "age": 4, "tasks": []}
+
+    pet = Pet.from_dict(old_style_data)
+
+    assert pet.weight is None
+    assert pet.diet_good == []
+    assert pet.diet_bad == []
+    assert pet.chronic_conditions == []
+    assert pet.documents == []
+
+
+def test_task_notes_round_trips_through_to_dict_and_from_dict():
+    task = Task("Vet checkup", "10:00", 30, notes="Eats poorly, sleeps a lot")
+
+    loaded = Task.from_dict(task.to_dict())
+
+    assert loaded.notes == "Eats poorly, sleeps a lot"
+
+
+def test_task_from_dict_defaults_notes_to_none_for_old_data_without_it():
+    old_style_data = {
+        "title": "Vet checkup",
+        "time": "10:00",
+        "duration_minutes": 30,
+        "priority": "medium",
+        "frequency": "once",
+        "due_date": date.today().isoformat(),
+        "completed": False,
+    }
+
+    task = Task.from_dict(old_style_data)
+
+    assert task.notes is None
+
+
+def test_completion_rate_returns_zero_with_no_tasks():
+    owner = Owner("Jordan")
+    owner.add_pet(Pet("Mochi", "dog"))
+
+    assert Scheduler(owner).completion_rate() == 0.0
+
+
+def test_completion_rate_computes_percentage_of_completed_tasks():
+    owner = Owner("Jordan")
+    pet = Pet("Mochi", "dog")
+    pet.add_task(Task("Walk", "08:00", 30, completed=True))
+    pet.add_task(Task("Medication", "12:00", 5, completed=True))
+    pet.add_task(Task("Brush", "18:00", 15, completed=False))
+    pet.add_task(Task("Bath", "19:00", 20, completed=False))
+    owner.add_pet(pet)
+
+    assert Scheduler(owner).completion_rate() == 50.0
+
+
+def test_completion_rate_filters_by_pet_name():
+    owner = Owner("Jordan")
+    mochi = Pet("Mochi", "dog")
+    mochi.add_task(Task("Walk", "08:00", 30, completed=True))
+    luna = Pet("Luna", "cat")
+    luna.add_task(Task("Brush", "08:00", 15, completed=False))
+    owner.add_pet(mochi)
+    owner.add_pet(luna)
+
+    assert Scheduler(owner).completion_rate(pet_name="Mochi") == 100.0
+    assert Scheduler(owner).completion_rate(pet_name="Luna") == 0.0
+
+
+def test_upcoming_tasks_returns_next_n_open_tasks_sorted_by_date_then_time():
+    owner = Owner("Jordan")
+    pet = Pet("Mochi", "dog")
+    today = date.today()
+    pet.add_task(Task("Past task", "08:00", 10, due_date=today - timedelta(days=1)))
+    pet.add_task(Task("Later today", "18:00", 10, due_date=today))
+    pet.add_task(Task("Earlier today", "07:00", 10, due_date=today))
+    pet.add_task(Task("Tomorrow", "09:00", 10, due_date=today + timedelta(days=1)))
+    pet.add_task(Task("Next week", "09:00", 10, due_date=today + timedelta(weeks=1)))
+    owner.add_pet(pet)
+
+    upcoming = Scheduler(owner).upcoming_tasks(n=3)
+
+    assert [task.title for _, task in upcoming] == [
+        "Earlier today",
+        "Later today",
+        "Tomorrow",
+    ]

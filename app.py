@@ -66,6 +66,7 @@ pg = st.navigation(
     {
         "": [st.Page(home_page, title="Home", icon="🏠", url_path="home", default=True)],
         "Manage": [
+            st.Page("pages/dashboard.py", title="Dashboard", icon="📊"),
             st.Page("pages/pets_and_schedule.py", title="My Pets & Schedule", icon="🐾"),
             st.Page("pages/todays_schedule.py", title="Today's Schedule", icon="📅"),
         ],
