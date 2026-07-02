@@ -1,3 +1,4 @@
+from datetime import date
 from pathlib import Path
 
 import streamlit as st
@@ -75,7 +76,6 @@ st.title("PawPal+")
 st.caption("A smart pet care scheduler for daily routines and reminders.")
 
 owner.name = st.sidebar.text_input("Owner name", value=owner.name)
-view_mode = st.sidebar.radio("Schedule view", ["Time", "Priority"], horizontal=True)
 pet_filter = st.sidebar.selectbox(
     "Filter by pet",
     ["All pets"] + [pet.name for pet in owner.pets],
@@ -120,12 +120,19 @@ with left:
             st.rerun()
 
         st.markdown("**Edit a pet**")
-        pet_to_edit = st.selectbox(
+        # Select by index and re-fetch owner.pets[i] fresh each run, rather
+        # than mutating the object the widget itself returns — st.selectbox
+        # isn't guaranteed to hand back the exact same live object across
+        # reruns for complex option types, so direct mutation on that
+        # returned value can silently edit a throwaway copy instead of the
+        # real data.
+        edit_pet_index = st.selectbox(
             "Pet to edit",
-            owner.pets,
-            format_func=lambda pet: f"{pet_species_icon(pet.species)} {pet.name}",
+            range(len(owner.pets)),
+            format_func=lambda i: f"{pet_species_icon(owner.pets[i].species)} {owner.pets[i].name}",
             key="edit_pet_select",
         )
+        pet_to_edit = owner.pets[edit_pet_index]
         with st.form("edit_pet_form"):
             edited_name = st.text_input("Name", value=pet_to_edit.name)
             species_options = ["dog", "cat", "bunny", "other"]
@@ -147,6 +154,116 @@ with left:
             pet_to_edit.age = int(edited_age)
             st.success(f"Updated {pet_to_edit.name}.")
             st.rerun()
+
+        all_tasks_for_edit = scheduler.sort_by_time(scheduler.filter_tasks())
+        if all_tasks_for_edit:
+            st.markdown("**Edit a task**")
+            # Same index-based approach as "Edit a pet" above, for the same
+            # reason: re-fetch the live (pet, task) pair fresh each run
+            # instead of trusting the widget to return the same live object.
+            edit_task_index = st.selectbox(
+                "Task to edit",
+                range(len(all_tasks_for_edit)),
+                format_func=lambda i: f"{pet_species_icon(all_tasks_for_edit[i][0].species)} {all_tasks_for_edit[i][0].name} | {task_type_icon(all_tasks_for_edit[i][1].title)} {all_tasks_for_edit[i][1].title}",
+                key="edit_task_select",
+            )
+            edit_pet, edit_task = all_tasks_for_edit[edit_task_index]
+
+            # Outside the form for the same reason as "Schedule a Task": picking
+            # "Other (custom)" needs to immediately reveal the text field below.
+            edit_title_choice = st.selectbox(
+                "Task",
+                COMMON_TASK_TITLES + ["Other (custom)"],
+                index=COMMON_TASK_TITLES.index(edit_task.title)
+                if edit_task.title in COMMON_TASK_TITLES
+                else len(COMMON_TASK_TITLES),
+                key="edit_task_title_choice",
+            )
+
+            with st.form("edit_task_form"):
+                edit_custom_title = (
+                    st.text_input(
+                        "Custom task title", value=edit_task.title, key="edit_custom_title"
+                    )
+                    if edit_title_choice == "Other (custom)"
+                    else None
+                )
+
+                st.write("Time")
+                current_hour, current_minute = map(int, edit_task.time.split(":"))
+                current_period = "AM" if current_hour < 12 else "PM"
+                current_hour_12 = current_hour % 12 or 12
+                minute_options = ["00", "15", "30", "45"]
+                current_minute_str = f"{current_minute:02d}"
+
+                edit_hour_col, edit_minute_col, edit_period_col = st.columns(3)
+                with edit_hour_col:
+                    edit_hour_12 = st.selectbox(
+                        "Hour",
+                        list(range(1, 13)),
+                        index=current_hour_12 - 1,
+                        label_visibility="collapsed",
+                        key="edit_hour",
+                    )
+                with edit_minute_col:
+                    edit_minute = st.selectbox(
+                        "Minute",
+                        minute_options,
+                        index=minute_options.index(current_minute_str)
+                        if current_minute_str in minute_options
+                        else 0,
+                        label_visibility="collapsed",
+                        key="edit_minute",
+                    )
+                with edit_period_col:
+                    edit_period = st.selectbox(
+                        "AM/PM",
+                        ["AM", "PM"],
+                        index=0 if current_period == "AM" else 1,
+                        label_visibility="collapsed",
+                        key="edit_period",
+                    )
+
+                edit_duration = st.number_input(
+                    "Duration (minutes)",
+                    min_value=1,
+                    max_value=240,
+                    value=edit_task.duration_minutes,
+                    key="edit_duration",
+                )
+                priority_options = ["high", "medium", "low"]
+                edit_priority = st.selectbox(
+                    "Priority",
+                    priority_options,
+                    index=priority_options.index(edit_task.priority),
+                    key="edit_priority",
+                )
+                frequency_options = ["once", "daily", "weekly"]
+                edit_frequency = st.selectbox(
+                    "Frequency",
+                    frequency_options,
+                    index=frequency_options.index(edit_task.frequency),
+                    key="edit_frequency",
+                )
+                submitted_task_edit = st.form_submit_button("Save task changes")
+
+            if submitted_task_edit:
+                new_title = (
+                    (edit_custom_title or "").strip()
+                    if edit_title_choice == "Other (custom)"
+                    else edit_title_choice
+                )
+                if new_title:
+                    new_hour_24 = edit_hour_12 % 12
+                    if edit_period == "PM":
+                        new_hour_24 += 12
+                    edit_task.title = new_title
+                    edit_task.time = f"{new_hour_24:02d}:{edit_minute}"
+                    edit_task.duration_minutes = int(edit_duration)
+                    edit_task.priority = edit_priority
+                    edit_task.frequency = edit_frequency
+                    st.success(f"Updated {edit_task.title} for {edit_pet.name}.")
+                    st.rerun()
     else:
         st.info("Add a pet to start scheduling care tasks.")
 
@@ -209,6 +326,7 @@ with right:
                 st.rerun()
 
 st.divider()
+st.subheader("Today's Highlights")
 
 completed_filter = None
 if status_filter == "Open":
@@ -217,50 +335,41 @@ elif status_filter == "Done":
     completed_filter = True
 
 pet_name = None if pet_filter == "All pets" else pet_filter
-filtered = scheduler.filter_tasks(pet_name=pet_name, completed=completed_filter)
-display_tasks = (
-    scheduler.sort_by_priority_then_time(filtered)
-    if view_mode == "Priority"
-    else scheduler.sort_by_time(filtered)
+today = date.today()
+todays_tasks = scheduler.sort_by_time(
+    [
+        pair
+        for pair in scheduler.filter_tasks(pet_name=pet_name, completed=completed_filter)
+        if pair[1].due_date == today
+    ]
 )
-
-st.subheader("Care Schedule")
-if display_tasks:
-    st.table(task_rows(display_tasks))
-else:
-    st.info("No tasks match the current filters.")
-
-st.divider()
-st.subheader("Today's Highlights")
-
-todays_tasks = scheduler.todays_schedule()
 
 st.markdown("**📅 Today's Schedule**")
 if todays_tasks:
     st.table(task_rows(todays_tasks))
 else:
-    st.info("No open tasks due today.")
+    st.info("No tasks due today match the current filters.")
 
 st.markdown("**❗ High Priority First**")
 high_priority_today = scheduler.sort_by_priority_then_time(todays_tasks)
 if high_priority_today:
     st.table(task_rows(high_priority_today))
 else:
-    st.info("No open tasks due today.")
+    st.info("No tasks due today match the current filters.")
 
 st.markdown("**🚨 Next Urgent Task**")
-urgent = scheduler.next_urgent_task()
+urgent = scheduler.next_urgent_task(todays_tasks)
 if urgent:
     st.table(task_rows([urgent]))
 else:
-    st.info("No open tasks due today.")
+    st.info("No tasks due today match the current filters.")
 
 st.markdown("**⭐ Today's Top 3 Priorities**")
-top_priorities = scheduler.top_priorities(3)
+top_priorities = scheduler.top_priorities(3, todays_tasks)
 if top_priorities:
     st.table(task_rows(top_priorities))
 else:
-    st.info("No open tasks due today.")
+    st.info("No tasks due today match the current filters.")
 
 st.markdown("**⚠️ Conflict Warnings**")
 conflicts = scheduler.detect_conflicts(scheduler.filter_tasks(completed=False))

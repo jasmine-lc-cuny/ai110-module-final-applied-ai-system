@@ -10,10 +10,10 @@ verified through `main.py` and pytest before being connected to the UI in
 
 - Add an owner, pets, and scheduled care tasks, choosing a task title from a dropdown of common care tasks (or "Other (custom)" for anything else).
 - Edit or delete a pet from the Streamlit UI (deletion disambiguated by species/age/task count so similarly-named pets aren't mixed up).
-- Delete a task, or reopen one that was marked complete by mistake.
+- Edit a task's title, time, duration, priority, or frequency; delete a task outright; or reopen one that was marked complete by mistake.
 - Track task time (shown as 12-hour AM/PM), duration, priority, frequency, due date, and completion.
-- View schedules sorted by time or by priority.
-- Filter tasks by pet and completion status.
+- View today's schedule sorted by time and by priority side by side, always both at once.
+- Filter every schedule view by pet and by completion status.
 - Detect exact date/time conflicts and show warnings.
 - Mark tasks complete and automatically create the next daily or weekly task.
 - Surface today's single next urgent task and a top-3 priority shortlist.
@@ -158,12 +158,11 @@ time zones, overlapping durations, and saved data across app restarts.
 
 ## Demo Walkthrough
 
-1. The user enters their owner name in the sidebar.
+1. The user enters their owner name in the sidebar, and can filter every schedule view below by pet and by status (Open/Done/All).
 2. The user adds pets such as Mochi the dog and Luna the cat, edits a pet's name/species/age, or deletes a pet (with all its tasks) from dropdowns under the pets table.
-3. The user schedules care tasks by picking a title from a dropdown of common tasks (or "Other (custom)"), plus a time (hour/minute/AM-PM), duration, priority, and frequency.
-4. The "Care Schedule" table displays all tasks matching the sidebar's pet/status filters, sorted by time or priority.
-5. A "Today's Highlights" section below it mirrors the CLI's views for tasks due today — 📅 Today's Schedule, ❗ High Priority First, 🚨 Next Urgent Task, and ⭐ Today's Top 3 Priorities — plus ⚠️ Conflict Warnings when two open tasks share the same date and time.
-6. When the user marks a daily or weekly task complete, PawPal+ creates the next occurrence automatically. A task can also be deleted outright, or reopened if it was marked complete by mistake.
+3. The user schedules care tasks by picking a title from a dropdown of common tasks (or "Other (custom)"), plus a time (hour/minute/AM-PM), duration, priority, and frequency. An existing task's title/time/duration/priority/frequency can also be edited later from a dropdown next to "Edit a pet".
+4. A "Today's Highlights" section mirrors the CLI's views for tasks due today, scoped by the sidebar's pet/status filters — 📅 Today's Schedule, ❗ High Priority First, 🚨 Next Urgent Task, and ⭐ Today's Top 3 Priorities — plus ⚠️ Conflict Warnings when two open tasks share the same date and time.
+5. When the user marks a daily or weekly task complete, PawPal+ creates the next occurrence automatically. A task can also be deleted outright, or reopened if it was marked complete by mistake.
 
 Sample CLI output from `python main.py` (same run shown in the Sample Output section above):
 
