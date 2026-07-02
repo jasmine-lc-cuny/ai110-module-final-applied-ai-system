@@ -273,7 +273,7 @@ def test_top_priorities_returns_top_n_ranked_tasks():
 
 def test_save_and_load_json_round_trip(tmp_path):
     owner = Owner("Jordan")
-    pet = Pet("Mochi", "dog", age=4)
+    pet = Pet("Mochi", "dog", age=4, sex="Male")
     pet.add_task(
         Task("Morning walk", "08:00", 30, priority="high", frequency="daily")
     )
@@ -288,6 +288,17 @@ def test_save_and_load_json_round_trip(tmp_path):
     loaded_pet = loaded.pets[0]
     assert loaded_pet.name == "Mochi"
     assert loaded_pet.age == 4
+    assert loaded_pet.sex == "Male"
     assert loaded_pet.tasks[0].title == "Morning walk"
     assert loaded_pet.tasks[0].frequency == "daily"
     assert loaded_pet.tasks[0].due_date == pet.tasks[0].due_date
+
+
+def test_pet_from_dict_defaults_sex_to_none_for_old_data_without_it():
+    # Backward compatibility: data.json files saved before the "sex" field
+    # was added won't have that key at all.
+    old_style_data = {"name": "Mochi", "species": "dog", "age": 4, "tasks": []}
+
+    pet = Pet.from_dict(old_style_data)
+
+    assert pet.sex is None

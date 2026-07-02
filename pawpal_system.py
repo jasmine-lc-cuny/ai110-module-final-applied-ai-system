@@ -149,6 +149,7 @@ class Pet:
     name: str
     species: str
     age: int | None = None
+    sex: str | None = None
     tasks: list[Task] = field(default_factory=list)
 
     def add_task(self, task: Task):
@@ -172,6 +173,7 @@ class Pet:
             "name": self.name,
             "species": self.species,
             "age": self.age,
+            "sex": self.sex,
             "tasks": [task.to_dict() for task in self.tasks],
         }
 
@@ -182,6 +184,7 @@ class Pet:
             name=data["name"],
             species=data["species"],
             age=data["age"],
+            sex=data.get("sex"),
             tasks=[Task.from_dict(task_data) for task_data in data["tasks"]],
         )
 

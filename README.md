@@ -159,7 +159,7 @@ time zones, overlapping durations, and saved data across app restarts.
 ## Demo Walkthrough
 
 1. The user enters their owner name in the sidebar, and can filter every schedule view below by pet and by status (Open/Done/All).
-2. The user adds pets such as Mochi the dog and Luna the cat, edits a pet's name/species/age, or deletes a pet (with all its tasks) from dropdowns under the pets table.
+2. The user adds pets such as Mochi the dog and Luna the cat (name, species, sex, and age), edits any of those fields later, or deletes a pet (with all its tasks) from dropdowns under the pets table.
 3. The user schedules care tasks by picking a title from a dropdown of common tasks (or "Other (custom)"), plus a time (hour/minute/AM-PM), duration, priority, and frequency. An existing task's title/time/duration/priority/frequency can also be edited later from a dropdown next to "Edit a pet".
 4. A "Today's Highlights" section mirrors the CLI's views for tasks due today, scoped by the sidebar's pet/status filters — 📅 Today's Schedule, ❗ High Priority First, 🚨 Next Urgent Task, and ⭐ Today's Top 3 Priorities — plus ⚠️ Conflict Warnings when two open tasks share the same date and time.
 5. When the user marks a daily or weekly task complete, PawPal+ creates the next occurrence automatically. A task can also be deleted outright, or reopened if it was marked complete by mistake.

@@ -89,11 +89,12 @@ with left:
     with st.form("add_pet_form", clear_on_submit=True):
         pet_name = st.text_input("Pet name")
         species = st.selectbox("Species", ["dog", "cat", "bunny", "other"])
+        sex = st.selectbox("Sex", ["Female", "Male"], key="add_pet_sex")
         age = st.number_input("Age", min_value=0, max_value=40, value=1)
         submitted_pet = st.form_submit_button("Add pet")
 
     if submitted_pet and pet_name.strip():
-        owner.add_pet(Pet(pet_name.strip(), species, int(age)))
+        owner.add_pet(Pet(pet_name.strip(), species, int(age), sex))
         st.success(f"Added {pet_name.strip()}.")
         st.rerun()
 
@@ -103,6 +104,7 @@ with left:
                 {
                     "Name": f"{pet_species_icon(pet.species)} {pet.name}",
                     "Species": pet.species,
+                    "Sex": pet.sex or "—",
                     "Age": pet.age,
                 }
                 for pet in owner.pets
@@ -143,6 +145,15 @@ with left:
                 if pet_to_edit.species in species_options
                 else species_options.index("other"),
             )
+            sex_options = ["Female", "Male"]
+            edited_sex = st.selectbox(
+                "Sex",
+                sex_options,
+                index=sex_options.index(pet_to_edit.sex)
+                if pet_to_edit.sex in sex_options
+                else 0,
+                key="edit_pet_sex",
+            )
             edited_age = st.number_input(
                 "Age", min_value=0, max_value=40, value=pet_to_edit.age or 0
             )
@@ -151,6 +162,7 @@ with left:
         if submitted_edit and edited_name.strip():
             pet_to_edit.name = edited_name.strip()
             pet_to_edit.species = edited_species
+            pet_to_edit.sex = edited_sex
             pet_to_edit.age = int(edited_age)
             st.success(f"Updated {pet_to_edit.name}.")
             st.rerun()
