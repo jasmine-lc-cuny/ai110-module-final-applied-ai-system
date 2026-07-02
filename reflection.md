@@ -60,7 +60,7 @@ The clean separation between backend logic and UI went well. Building `pawpal_sy
 
 **b. What you would improve**
 
-In another iteration, I would add JSON persistence so pets and tasks survive after the app closes. I would also improve conflict detection to check overlapping durations, not just exact time matches. The UI could also include edit/delete actions for pets and tasks. Those changes would make PawPal+ feel more like a real pet care app.
+Since finishing the base project, I already added JSON persistence (`Owner.save_to_json()`/`Owner.load_from_json()`) and a delete-pet action in the Streamlit UI (`Owner.remove_pet()`), both of which used to be on this list. What's left: conflict detection still only checks exact time matches, not overlapping durations, and the UI has no way to edit or delete an individual task (only whole pets). Those changes would make PawPal+ feel more like a real pet care app.
 
 **c. Key takeaway**
 

@@ -74,6 +74,16 @@ with left:
                 for pet in owner.pets
             ]
         )
+
+        pet_to_delete = st.selectbox(
+            "Delete a pet",
+            owner.pets,
+            format_func=lambda pet: f"{pet.name} ({pet.species}, age {pet.age}, {len(pet.tasks)} task(s))",
+        )
+        if st.button("Delete pet"):
+            owner.remove_pet(pet_to_delete)
+            st.success(f"Deleted {pet_to_delete.name} and their tasks.")
+            st.rerun()
     else:
         st.info("Add a pet to start scheduling care tasks.")
 

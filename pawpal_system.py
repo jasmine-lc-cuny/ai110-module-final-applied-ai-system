@@ -159,6 +159,13 @@ class Owner:
                 return pet
         return None
 
+    def remove_pet(self, pet: Pet) -> bool:
+        """Remove a pet (and all its tasks) from this owner; returns whether it was found."""
+        if pet in self.pets:
+            self.pets.remove(pet)
+            return True
+        return False
+
     def all_tasks(self) -> list[tuple[Pet, Task]]:
         """Return every task paired with the pet it belongs to."""
         return [(pet, task) for pet in self.pets for task in pet.tasks]

@@ -28,6 +28,27 @@ def test_adding_task_increases_pet_task_count():
     assert len(pet.tasks) == 1
 
 
+def test_remove_pet_deletes_the_correct_pet_among_similarly_named_ones():
+    owner = Owner("Jordan")
+    luna = Pet("Luna", "cat", age=2)
+    luna.add_task(Task("Breakfast", "07:30", 10))
+    duplicate_luna = Pet("luna", "cat", age=1)
+    owner.add_pet(luna)
+    owner.add_pet(duplicate_luna)
+
+    removed = owner.remove_pet(duplicate_luna)
+
+    assert removed is True
+    assert owner.pets == [luna]
+
+
+def test_remove_pet_returns_false_when_pet_not_found():
+    owner = Owner("Jordan")
+    owner.add_pet(Pet("Mochi", "dog"))
+
+    assert owner.remove_pet(Pet("Ghost", "dog")) is False
+
+
 def test_scheduler_sorts_tasks_by_time():
     owner = Owner("Jordan")
     pet = Pet("Luna", "cat")

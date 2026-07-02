@@ -9,6 +9,7 @@ verified through `main.py` and pytest before being connected to the UI in
 ## Features
 
 - Add an owner, pets, and scheduled care tasks.
+- Delete a pet (and all their tasks) from the Streamlit UI, disambiguated by species/age/task count so similarly-named pets aren't mixed up.
 - Track task time, duration, priority, frequency, due date, and completion.
 - View schedules sorted by time or by priority.
 - Filter tasks by pet and completion status.
