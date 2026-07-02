@@ -7,6 +7,7 @@ from pathlib import Path
 import streamlit as st
 
 from pawpal_system import (
+    Clinic,
     Document,
     Owner,
     Pet,
@@ -20,8 +21,17 @@ from pawpal_system import (
 )
 
 DATA_PATH = Path("data.json")
+CLINIC_DATA_PATH = Path("clinic.json")
 UPLOADS_PATH = Path("uploads")
 NEW_OWNER_CHOICE = "+ Add new owner"
+
+# st.badge() color per Appointment.status, matching the mockup's palette.
+APPOINTMENT_STATUS_COLORS = {
+    "Pending": "yellow",
+    "Confirmed": "blue",
+    "Completed": "green",
+    "Cancelled": "red",
+}
 
 # Categories offered when uploading a Document, mirroring the mockup's
 # document groupings.
@@ -177,6 +187,23 @@ def save_owners(owners: list[Owner]) -> None:
 def save_owner(owner: Owner) -> None:
     """Persist all owners to data.json — call after any mutation, on every page."""
     save_owners(get_owners())
+
+
+def get_clinic() -> Clinic:
+    """Return this session's Clinic (departments/doctors/services/appointments),
+    loading it from clinic.json once if needed. Unlike get_owner(), this is not
+    scoped to any single owner — it's shared across every "Clinic Staff" page."""
+    if "clinic" not in st.session_state:
+        if CLINIC_DATA_PATH.exists():
+            st.session_state.clinic = Clinic.load_from_json(str(CLINIC_DATA_PATH))
+        else:
+            st.session_state.clinic = Clinic()
+    return st.session_state.clinic
+
+
+def save_clinic(clinic: Clinic) -> None:
+    """Persist the clinic's records to clinic.json — call after any mutation."""
+    clinic.save_to_json(str(CLINIC_DATA_PATH))
 
 
 def slugify_for_path(name: str) -> str:

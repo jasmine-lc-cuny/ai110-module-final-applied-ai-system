@@ -69,6 +69,7 @@ pg = st.navigation(
             st.Page("pages/dashboard.py", title="Dashboard", icon="📊"),
             st.Page("pages/pets_and_schedule.py", title="My Pets & Schedule", icon="🐾"),
             st.Page("pages/todays_schedule.py", title="Today's Schedule", icon="📅"),
+            st.Page("pages/calendar.py", title="Calendar", icon="🗓️"),
         ],
         "Book a Service": [
             st.Page("pages/grooming.py", title="Grooming", icon="🛁"),
@@ -77,6 +78,13 @@ pg = st.navigation(
             st.Page("pages/walking.py", title="Walking", icon="🐕"),
             st.Page("pages/veterinary.py", title="Veterinary", icon="🏥"),
             st.Page("pages/special_services.py", title="Special Services", icon="✨"),
+        ],
+        "🏥 Clinic Staff": [
+            st.Page("pages/clinic_dashboard.py", title="Clinic Dashboard", icon="🩺"),
+            st.Page("pages/appointments.py", title="Appointments", icon="📋"),
+            st.Page("pages/doctors.py", title="Doctors", icon="👩‍⚕️"),
+            st.Page("pages/departments_and_services.py", title="Departments & Services", icon="🏬"),
+            st.Page("pages/patients.py", title="Patients", icon="🧾"),
         ],
     }
 )

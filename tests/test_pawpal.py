@@ -1,11 +1,17 @@
 from datetime import date, timedelta
 
 from pawpal_system import (
+    Appointment,
+    Clinic,
+    Department,
+    Doctor,
     Document,
     Owner,
     Pet,
     Scheduler,
+    Service,
     Task,
+    find_owner,
     format_time_12h,
     pet_species_icon,
     task_type_icon,
@@ -427,3 +433,168 @@ def test_upcoming_tasks_returns_next_n_open_tasks_sorted_by_date_then_time():
         "Later today",
         "Tomorrow",
     ]
+
+
+def test_owner_round_trips_new_contact_fields():
+    owner = Owner("Jasmine", phone="555-1234", email="jasmine@example.com", address="1 Main St")
+
+    loaded = Owner.from_dict(owner.to_dict())
+
+    assert loaded == owner
+
+
+def test_owner_from_dict_defaults_contact_fields_to_none_for_old_data_without_them():
+    old_style_data = {"name": "Jordan", "pets": []}
+
+    owner = Owner.from_dict(old_style_data)
+
+    assert owner.phone is None
+    assert owner.email is None
+    assert owner.address is None
+
+
+def test_pet_round_trips_blood_type_field():
+    pet = Pet("Mochi", "dog", blood_type="DEA 1.1 positive")
+
+    loaded = Pet.from_dict(pet.to_dict())
+
+    assert loaded.blood_type == "DEA 1.1 positive"
+
+
+def test_pet_from_dict_defaults_blood_type_to_none_for_old_data_without_it():
+    old_style_data = {"name": "Mochi", "species": "dog", "age": 4, "tasks": []}
+
+    pet = Pet.from_dict(old_style_data)
+
+    assert pet.blood_type is None
+
+
+def test_find_owner_matches_case_insensitively():
+    owners = [Owner("Jasmine"), Owner("John")]
+
+    assert find_owner(owners, "john") is owners[1]
+
+
+def test_find_owner_returns_none_when_not_found():
+    owners = [Owner("Jasmine")]
+
+    assert find_owner(owners, "Nonexistent") is None
+
+
+def test_department_to_dict_and_from_dict_round_trip():
+    department = Department("Dental", "Dental Care")
+
+    loaded = Department.from_dict(department.to_dict())
+
+    assert loaded == department
+
+
+def test_doctor_to_dict_and_from_dict_round_trip():
+    doctor = Doctor(
+        first_name="Jane",
+        last_name="Roe",
+        username="jroe",
+        password="hunter2",
+        email="jroe@example.com",
+        phone="555-0000",
+        department_name="General",
+        specialization="Surgery",
+        education="DVM",
+        visit_fee=75.0,
+        active=True,
+    )
+
+    loaded = Doctor.from_dict(doctor.to_dict())
+
+    assert loaded == doctor
+    assert loaded.full_name == "Dr. Jane Roe"
+
+
+def test_service_to_dict_and_from_dict_round_trip():
+    service = Service("Blood Test", "General", 20.0)
+
+    loaded = Service.from_dict(service.to_dict())
+
+    assert loaded == service
+
+
+def test_appointment_to_dict_and_from_dict_round_trip():
+    appointment = Appointment(
+        owner_name="Jasmine",
+        pet_name="Garfield",
+        doctor_username="jroe",
+        date=date(2026, 1, 15),
+        time="10:00",
+        reason="Annual checkup",
+        status="Confirmed",
+    )
+
+    loaded = Appointment.from_dict(appointment.to_dict())
+
+    assert loaded == appointment
+
+
+def test_clinic_save_and_load_json_round_trip(tmp_path):
+    clinic = Clinic(
+        departments=[Department("General", "General Medicine")],
+        doctors=[Doctor("Jane", "Roe", "jroe", visit_fee=75.0)],
+        services=[Service("Blood Test", "General", 20.0)],
+        appointments=[
+            Appointment("Jasmine", "Garfield", "jroe", date(2026, 1, 15), "10:00")
+        ],
+    )
+
+    json_path = tmp_path / "clinic.json"
+    clinic.save_to_json(str(json_path))
+    loaded = Clinic.load_from_json(str(json_path))
+
+    assert loaded.departments == clinic.departments
+    assert loaded.doctors == clinic.doctors
+    assert loaded.services == clinic.services
+    assert loaded.appointments == clinic.appointments
+
+
+def test_clinic_find_doctor_matches_case_insensitively():
+    doctor = Doctor("Jane", "Roe", "jroe")
+    clinic = Clinic(doctors=[doctor])
+
+    assert clinic.find_doctor("JROE") is doctor
+
+
+def test_clinic_find_doctor_returns_none_when_not_found():
+    clinic = Clinic()
+
+    assert clinic.find_doctor("nobody") is None
+
+
+def test_clinic_find_department_matches_case_insensitively():
+    department = Department("Dental", "Dental Care")
+    clinic = Clinic(departments=[department])
+
+    assert clinic.find_department("dental") is department
+
+
+def test_clinic_income_sums_visit_fee_for_completed_appointments_only():
+    cheap_doctor = Doctor("Jane", "Roe", "jroe", visit_fee=50.0)
+    pricey_doctor = Doctor("Sam", "Lee", "slee", visit_fee=100.0)
+    clinic = Clinic(
+        doctors=[cheap_doctor, pricey_doctor],
+        appointments=[
+            Appointment("Jasmine", "Garfield", "jroe", date.today(), "10:00", status="Completed"),
+            Appointment("Jasmine", "Heathcliff", "slee", date.today(), "11:00", status="Completed"),
+            Appointment("John", "Rex", "jroe", date.today(), "12:00", status="Pending"),
+        ],
+    )
+
+    assert clinic.income() == 150.0
+
+
+def test_clinic_income_skips_appointment_whose_doctor_was_deleted():
+    clinic = Clinic(
+        doctors=[],
+        appointments=[
+            Appointment("Jasmine", "Garfield", "ghost", date.today(), "10:00", status="Completed"),
+        ],
+    )
+
+    assert clinic.income() == 0.0

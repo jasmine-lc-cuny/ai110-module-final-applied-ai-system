@@ -188,6 +188,7 @@ class Pet:
     diet_bad: list[str] = field(default_factory=list)
     chronic_conditions: list[str] = field(default_factory=list)
     documents: list[Document] = field(default_factory=list)
+    blood_type: str | None = None
 
     def add_task(self, task: Task):
         """Add a task to this pet."""
@@ -217,6 +218,7 @@ class Pet:
             "diet_bad": self.diet_bad,
             "chronic_conditions": self.chronic_conditions,
             "documents": [document.to_dict() for document in self.documents],
+            "blood_type": self.blood_type,
         }
 
     @classmethod
@@ -236,6 +238,7 @@ class Pet:
                 Document.from_dict(document_data)
                 for document_data in data.get("documents", [])
             ],
+            blood_type=data.get("blood_type"),
         )
 
 
@@ -245,6 +248,9 @@ class Owner:
 
     name: str
     pets: list[Pet] = field(default_factory=list)
+    phone: str | None = None
+    email: str | None = None
+    address: str | None = None
 
     def add_pet(self, pet: Pet):
         """Add a pet to this owner."""
@@ -273,6 +279,9 @@ class Owner:
         return {
             "name": self.name,
             "pets": [pet.to_dict() for pet in self.pets],
+            "phone": self.phone,
+            "email": self.email,
+            "address": self.address,
         }
 
     @classmethod
@@ -281,6 +290,9 @@ class Owner:
         return cls(
             name=data["name"],
             pets=[Pet.from_dict(pet_data) for pet_data in data["pets"]],
+            phone=data.get("phone"),
+            email=data.get("email"),
+            address=data.get("address"),
         )
 
     def save_to_json(self, path: str) -> None:
@@ -311,6 +323,234 @@ def load_owners_from_json(path: str) -> list[Owner]:
     if "owners" in data:
         return [Owner.from_dict(owner_data) for owner_data in data["owners"]]
     return [Owner.from_dict(data)]
+
+
+def find_owner(owners: list[Owner], name: str) -> Owner | None:
+    """Return the owner with a matching name, if it exists."""
+    for owner in owners:
+        if owner.name.lower() == name.lower():
+            return owner
+    return None
+
+
+APPOINTMENT_STATUSES = ["Pending", "Confirmed", "Completed", "Cancelled"]
+
+
+@dataclass
+class Department:
+    """Represent one clinic department (e.g. General, Dental)."""
+
+    name: str
+    description: str = ""
+
+    def to_dict(self) -> dict:
+        """Convert this department to a JSON-serializable dictionary."""
+        return {"name": self.name, "description": self.description}
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Department:
+        """Rebuild a Department from a dictionary produced by to_dict()."""
+        return cls(name=data["name"], description=data.get("description", ""))
+
+
+@dataclass
+class Doctor:
+    """Represent one clinic staff member who can be assigned to appointments."""
+
+    first_name: str
+    last_name: str
+    username: str
+    password: str = ""
+    email: str | None = None
+    phone: str | None = None
+    department_name: str = ""
+    specialization: str = ""
+    education: str = ""
+    visit_fee: float = 0.0
+    active: bool = True
+
+    @property
+    def full_name(self) -> str:
+        """Return the doctor's display name, e.g. 'Dr. Jane Roe'."""
+        return f"Dr. {self.first_name} {self.last_name}".strip()
+
+    def to_dict(self) -> dict:
+        """Convert this doctor to a JSON-serializable dictionary."""
+        return {
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "username": self.username,
+            "password": self.password,
+            "email": self.email,
+            "phone": self.phone,
+            "department_name": self.department_name,
+            "specialization": self.specialization,
+            "education": self.education,
+            "visit_fee": self.visit_fee,
+            "active": self.active,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Doctor:
+        """Rebuild a Doctor from a dictionary produced by to_dict()."""
+        return cls(
+            first_name=data["first_name"],
+            last_name=data["last_name"],
+            username=data["username"],
+            password=data.get("password", ""),
+            email=data.get("email"),
+            phone=data.get("phone"),
+            department_name=data.get("department_name", ""),
+            specialization=data.get("specialization", ""),
+            education=data.get("education", ""),
+            visit_fee=data.get("visit_fee", 0.0),
+            active=data.get("active", True),
+        )
+
+
+@dataclass
+class Service:
+    """Represent one billable clinic service (e.g. Blood Test)."""
+
+    name: str
+    department_name: str = ""
+    cost: float = 0.0
+
+    def to_dict(self) -> dict:
+        """Convert this service to a JSON-serializable dictionary."""
+        return {
+            "name": self.name,
+            "department_name": self.department_name,
+            "cost": self.cost,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Service:
+        """Rebuild a Service from a dictionary produced by to_dict()."""
+        return cls(
+            name=data["name"],
+            department_name=data.get("department_name", ""),
+            cost=data.get("cost", 0.0),
+        )
+
+
+@dataclass
+class Appointment:
+    """Represent one clinic appointment linking a pet to a doctor."""
+
+    owner_name: str
+    pet_name: str
+    doctor_username: str
+    date: date
+    time: str
+    reason: str = ""
+    status: str = "Pending"
+
+    def to_dict(self) -> dict:
+        """Convert this appointment to a JSON-serializable dictionary."""
+        return {
+            "owner_name": self.owner_name,
+            "pet_name": self.pet_name,
+            "doctor_username": self.doctor_username,
+            "date": self.date.isoformat(),
+            "time": self.time,
+            "reason": self.reason,
+            "status": self.status,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Appointment:
+        """Rebuild an Appointment from a dictionary produced by to_dict()."""
+        return cls(
+            owner_name=data["owner_name"],
+            pet_name=data["pet_name"],
+            doctor_username=data["doctor_username"],
+            date=date.fromisoformat(data["date"]),
+            time=data["time"],
+            reason=data.get("reason", ""),
+            status=data.get("status", "Pending"),
+        )
+
+
+class Clinic:
+    """Hold clinic-wide records (departments, doctors, services, appointments)
+    shared across every owner, independent of any single Owner's pets/tasks."""
+
+    def __init__(
+        self,
+        departments: list[Department] | None = None,
+        doctors: list[Doctor] | None = None,
+        services: list[Service] | None = None,
+        appointments: list[Appointment] | None = None,
+    ):
+        """Create a clinic, optionally seeded with existing records."""
+        self.departments = departments if departments is not None else []
+        self.doctors = doctors if doctors is not None else []
+        self.services = services if services is not None else []
+        self.appointments = appointments if appointments is not None else []
+
+    def find_doctor(self, username: str) -> Doctor | None:
+        """Return the doctor with a matching username, if it exists."""
+        for doctor in self.doctors:
+            if doctor.username.lower() == username.lower():
+                return doctor
+        return None
+
+    def find_department(self, name: str) -> Department | None:
+        """Return the department with a matching name, if it exists."""
+        for department in self.departments:
+            if department.name.lower() == name.lower():
+                return department
+        return None
+
+    def income(self) -> float:
+        """Return total income: each Completed appointment's doctor's visit fee."""
+        total = 0.0
+        for appointment in self.appointments:
+            if appointment.status != "Completed":
+                continue
+            doctor = self.find_doctor(appointment.doctor_username)
+            if doctor is not None:
+                total += doctor.visit_fee
+        return total
+
+    def to_dict(self) -> dict:
+        """Convert this clinic's records to a JSON-serializable dictionary."""
+        return {
+            "departments": [department.to_dict() for department in self.departments],
+            "doctors": [doctor.to_dict() for doctor in self.doctors],
+            "services": [service.to_dict() for service in self.services],
+            "appointments": [appointment.to_dict() for appointment in self.appointments],
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Clinic:
+        """Rebuild a Clinic from a dictionary produced by to_dict()."""
+        return cls(
+            departments=[
+                Department.from_dict(department_data)
+                for department_data in data.get("departments", [])
+            ],
+            doctors=[Doctor.from_dict(doctor_data) for doctor_data in data.get("doctors", [])],
+            services=[
+                Service.from_dict(service_data) for service_data in data.get("services", [])
+            ],
+            appointments=[
+                Appointment.from_dict(appointment_data)
+                for appointment_data in data.get("appointments", [])
+            ],
+        )
+
+    def save_to_json(self, path: str) -> None:
+        """Save this clinic's records to a JSON file at path."""
+        with open(path, "w", encoding="utf-8") as file:
+            json.dump(self.to_dict(), file, indent=2)
+
+    @classmethod
+    def load_from_json(cls, path: str) -> Clinic:
+        """Load a clinic's records from a JSON file at path."""
+        with open(path, "r", encoding="utf-8") as file:
+            return cls.from_dict(json.load(file))
 
 
 class Scheduler:
