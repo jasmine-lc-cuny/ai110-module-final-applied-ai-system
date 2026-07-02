@@ -3,7 +3,13 @@ import re
 import streamlit as st
 
 from pawpal_system import APPOINTMENT_STATUSES, Appointment, find_owner, format_time_12h
-from app_common import APPOINTMENT_STATUS_COLORS, get_clinic, get_owners, save_clinic
+from app_common import (
+    APPOINTMENT_STATUS_COLORS,
+    get_clinic,
+    get_owners,
+    render_category_page,
+    save_clinic,
+)
 
 
 def _dialog_key(*parts) -> str:
@@ -106,10 +112,19 @@ def update_status_dialog(clinic, appointment, owners) -> None:
         st.rerun()
 
 
+# The pet-owner-facing "Schedule a Veterinary Task" quick-add form used to
+# live on its own "Book a Service" page; it's rendered here instead since
+# quick vet-care scheduling and clinic-side appointment booking now live on
+# the same page. render_category_page() also renders its own owner switcher
+# in the sidebar, on top of the clinic-wide content below.
+render_category_page("veterinary", "Veterinary", "🏥")
+
+st.divider()
+
 owners = get_owners()
 clinic = get_clinic()
 
-st.title("📋 Appointments")
+st.subheader("📋 Appointments")
 st.caption("Book new appointments and manage their status.")
 
 status_filter = st.sidebar.selectbox("Filter by status", ["All"] + APPOINTMENT_STATUSES)

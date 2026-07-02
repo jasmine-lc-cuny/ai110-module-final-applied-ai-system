@@ -77,6 +77,20 @@ COMMON_TASK_TITLES = [
     "Playtime",
 ]
 
+# Common clinic services offered in the "Service" dropdown on the Services
+# page, each with a typical default cost that pre-fills (but doesn't lock)
+# the Cost field — same "pick a common one, or Other (custom)" pattern as
+# COMMON_TASK_TITLES.
+COMMON_SERVICES = [
+    ("Blood Work", 45.0),
+    ("X-Ray", 100.0),
+    ("Medication Injection", 25.0),
+    ("Surgery", 500.0),
+    ("Vaccination", 30.0),
+    ("Dental Cleaning", 80.0),
+    ("Spay/Neuter", 250.0),
+]
+
 # Which task_type_icon() emoji belong to each "Book a Service" category.
 # Feeding (🍖) and anything task_type_icon() can't categorize (🐾) don't have
 # an obvious home among the 6 categories, so they land under Special
@@ -192,7 +206,7 @@ def save_owner(owner: Owner) -> None:
 def get_clinic() -> Clinic:
     """Return this session's Clinic (departments/doctors/services/appointments),
     loading it from clinic.json once if needed. Unlike get_owner(), this is not
-    scoped to any single owner — it's shared across every "Clinic Staff" page."""
+    scoped to any single owner — it's shared across every "Veterinarian" page."""
     if "clinic" not in st.session_state:
         if CLINIC_DATA_PATH.exists():
             st.session_state.clinic = Clinic.load_from_json(str(CLINIC_DATA_PATH))

@@ -337,23 +337,6 @@ APPOINTMENT_STATUSES = ["Pending", "Confirmed", "Completed", "Cancelled"]
 
 
 @dataclass
-class Department:
-    """Represent one clinic department (e.g. General, Dental)."""
-
-    name: str
-    description: str = ""
-
-    def to_dict(self) -> dict:
-        """Convert this department to a JSON-serializable dictionary."""
-        return {"name": self.name, "description": self.description}
-
-    @classmethod
-    def from_dict(cls, data: dict) -> Department:
-        """Rebuild a Department from a dictionary produced by to_dict()."""
-        return cls(name=data["name"], description=data.get("description", ""))
-
-
-@dataclass
 class Doctor:
     """Represent one clinic staff member who can be assigned to appointments."""
 
@@ -413,25 +396,16 @@ class Service:
     """Represent one billable clinic service (e.g. Blood Test)."""
 
     name: str
-    department_name: str = ""
     cost: float = 0.0
 
     def to_dict(self) -> dict:
         """Convert this service to a JSON-serializable dictionary."""
-        return {
-            "name": self.name,
-            "department_name": self.department_name,
-            "cost": self.cost,
-        }
+        return {"name": self.name, "cost": self.cost}
 
     @classmethod
     def from_dict(cls, data: dict) -> Service:
         """Rebuild a Service from a dictionary produced by to_dict()."""
-        return cls(
-            name=data["name"],
-            department_name=data.get("department_name", ""),
-            cost=data.get("cost", 0.0),
-        )
+        return cls(name=data["name"], cost=data.get("cost", 0.0))
 
 
 @dataclass
@@ -473,18 +447,16 @@ class Appointment:
 
 
 class Clinic:
-    """Hold clinic-wide records (departments, doctors, services, appointments)
-    shared across every owner, independent of any single Owner's pets/tasks."""
+    """Hold clinic-wide records (doctors, services, appointments) shared
+    across every owner, independent of any single Owner's pets/tasks."""
 
     def __init__(
         self,
-        departments: list[Department] | None = None,
         doctors: list[Doctor] | None = None,
         services: list[Service] | None = None,
         appointments: list[Appointment] | None = None,
     ):
         """Create a clinic, optionally seeded with existing records."""
-        self.departments = departments if departments is not None else []
         self.doctors = doctors if doctors is not None else []
         self.services = services if services is not None else []
         self.appointments = appointments if appointments is not None else []
@@ -494,13 +466,6 @@ class Clinic:
         for doctor in self.doctors:
             if doctor.username.lower() == username.lower():
                 return doctor
-        return None
-
-    def find_department(self, name: str) -> Department | None:
-        """Return the department with a matching name, if it exists."""
-        for department in self.departments:
-            if department.name.lower() == name.lower():
-                return department
         return None
 
     def income(self) -> float:
@@ -517,7 +482,6 @@ class Clinic:
     def to_dict(self) -> dict:
         """Convert this clinic's records to a JSON-serializable dictionary."""
         return {
-            "departments": [department.to_dict() for department in self.departments],
             "doctors": [doctor.to_dict() for doctor in self.doctors],
             "services": [service.to_dict() for service in self.services],
             "appointments": [appointment.to_dict() for appointment in self.appointments],
@@ -527,10 +491,6 @@ class Clinic:
     def from_dict(cls, data: dict) -> Clinic:
         """Rebuild a Clinic from a dictionary produced by to_dict()."""
         return cls(
-            departments=[
-                Department.from_dict(department_data)
-                for department_data in data.get("departments", [])
-            ],
             doctors=[Doctor.from_dict(doctor_data) for doctor_data in data.get("doctors", [])],
             services=[
                 Service.from_dict(service_data) for service_data in data.get("services", [])

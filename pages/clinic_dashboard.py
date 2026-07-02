@@ -9,13 +9,13 @@ QUICK_ACTIONS = [
     ("📋", "Appointments", "pages/appointments.py"),
     ("🧾", "Patients", "pages/patients.py"),
     ("👩‍⚕️", "Doctors", "pages/doctors.py"),
-    ("🏬", "Departments & Services", "pages/departments_and_services.py"),
+    ("💲", "Services", "pages/services.py"),
 ]
 
 owners = get_owners()
 clinic = get_clinic()
 
-st.title("🩺 Clinic Dashboard")
+st.title("🏥 Clinic Dashboard")
 st.caption("A clinic-wide view across every owner's pets — not scoped to one owner.")
 
 stat_cols = st.columns(4)

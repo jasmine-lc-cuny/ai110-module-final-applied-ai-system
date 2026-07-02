@@ -3,7 +3,6 @@ from datetime import date, timedelta
 from pawpal_system import (
     Appointment,
     Clinic,
-    Department,
     Doctor,
     Document,
     Owner,
@@ -481,14 +480,6 @@ def test_find_owner_returns_none_when_not_found():
     assert find_owner(owners, "Nonexistent") is None
 
 
-def test_department_to_dict_and_from_dict_round_trip():
-    department = Department("Dental", "Dental Care")
-
-    loaded = Department.from_dict(department.to_dict())
-
-    assert loaded == department
-
-
 def test_doctor_to_dict_and_from_dict_round_trip():
     doctor = Doctor(
         first_name="Jane",
@@ -511,7 +502,7 @@ def test_doctor_to_dict_and_from_dict_round_trip():
 
 
 def test_service_to_dict_and_from_dict_round_trip():
-    service = Service("Blood Test", "General", 20.0)
+    service = Service("Blood Test", 20.0)
 
     loaded = Service.from_dict(service.to_dict())
 
@@ -536,9 +527,8 @@ def test_appointment_to_dict_and_from_dict_round_trip():
 
 def test_clinic_save_and_load_json_round_trip(tmp_path):
     clinic = Clinic(
-        departments=[Department("General", "General Medicine")],
         doctors=[Doctor("Jane", "Roe", "jroe", visit_fee=75.0)],
-        services=[Service("Blood Test", "General", 20.0)],
+        services=[Service("Blood Test", 20.0)],
         appointments=[
             Appointment("Jasmine", "Garfield", "jroe", date(2026, 1, 15), "10:00")
         ],
@@ -548,7 +538,6 @@ def test_clinic_save_and_load_json_round_trip(tmp_path):
     clinic.save_to_json(str(json_path))
     loaded = Clinic.load_from_json(str(json_path))
 
-    assert loaded.departments == clinic.departments
     assert loaded.doctors == clinic.doctors
     assert loaded.services == clinic.services
     assert loaded.appointments == clinic.appointments
@@ -565,13 +554,6 @@ def test_clinic_find_doctor_returns_none_when_not_found():
     clinic = Clinic()
 
     assert clinic.find_doctor("nobody") is None
-
-
-def test_clinic_find_department_matches_case_insensitively():
-    department = Department("Dental", "Dental Care")
-    clinic = Clinic(departments=[department])
-
-    assert clinic.find_department("dental") is department
 
 
 def test_clinic_income_sums_visit_fee_for_completed_appointments_only():

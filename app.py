@@ -17,7 +17,6 @@ SERVICES = [
     ("🏠", "Sitting", "pages/sitting.py"),
     ("🎓", "Training", "pages/training.py"),
     ("🐕", "Walking", "pages/walking.py"),
-    ("🏥", "Veterinary", "pages/veterinary.py"),
     ("✨", "Special Services", "pages/special_services.py"),
 ]
 
@@ -76,14 +75,13 @@ pg = st.navigation(
             st.Page("pages/sitting.py", title="Sitting", icon="🏠"),
             st.Page("pages/training.py", title="Training", icon="🎓"),
             st.Page("pages/walking.py", title="Walking", icon="🐕"),
-            st.Page("pages/veterinary.py", title="Veterinary", icon="🏥"),
             st.Page("pages/special_services.py", title="Special Services", icon="✨"),
         ],
-        "🏥 Clinic Staff": [
-            st.Page("pages/clinic_dashboard.py", title="Clinic Dashboard", icon="🩺"),
+        "🩺 Veterinarian": [
+            st.Page("pages/clinic_dashboard.py", title="Clinic Dashboard", icon="🏥"),
             st.Page("pages/appointments.py", title="Appointments", icon="📋"),
             st.Page("pages/doctors.py", title="Doctors", icon="👩‍⚕️"),
-            st.Page("pages/departments_and_services.py", title="Departments & Services", icon="🏬"),
+            st.Page("pages/services.py", title="Services", icon="💲"),
             st.Page("pages/patients.py", title="Patients", icon="🧾"),
         ],
     }
