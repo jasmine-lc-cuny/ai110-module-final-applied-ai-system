@@ -1,3 +1,4 @@
+import sys
 from datetime import date
 
 from prettytable import PrettyTable, TableStyle
@@ -9,8 +10,31 @@ from pawpal_system import (
     Task,
     format_time_12h,
     pet_species_icon,
+    priority_icon,
     task_type_icon,
 )
+
+# ANSI colors only when stdout is a real terminal. When output is piped or
+# captured (e.g. pasting a sample run into the README), the escape codes
+# would show up as garbage like "\033[31m", so they auto-disable — the same
+# convention tools like git and pytest follow.
+USE_COLOR = sys.stdout.isatty()
+
+ANSI_CODES = {
+    "red": "31",
+    "yellow": "33",
+    "green": "32",
+    "bold": "1",
+}
+
+PRIORITY_COLORS = {"high": "red", "medium": "yellow", "low": "green"}
+
+
+def colorize(text, color):
+    """Wrap text in an ANSI color code, or return it unchanged when piped."""
+    if not USE_COLOR:
+        return text
+    return f"\033[{ANSI_CODES[color]}m{text}\033[0m"
 
 
 def build_demo_owner():
@@ -34,7 +58,7 @@ def build_demo_owner():
 
 def print_schedule(title, task_pairs):
     """Print a schedule section as a formatted table using PrettyTable."""
-    print(title)
+    print(colorize(title, "bold"))
     print()
     if not task_pairs:
         print("  No tasks found.\n")
@@ -49,6 +73,14 @@ def print_schedule(title, task_pairs):
     table.set_style(TableStyle.MARKDOWN)
     table.align = "l"
     for pet, task in task_pairs:
+        priority_cell = colorize(
+            f"{priority_icon(task.priority)} {task.priority}",
+            PRIORITY_COLORS.get(task.priority, "yellow"),
+        )
+        if task.completed:
+            status_cell = colorize("✅ done", "green")
+        else:
+            status_cell = colorize("⏳ open", "yellow")
         table.add_row(
             [
                 format_time_12h(task.time),
@@ -56,10 +88,10 @@ def print_schedule(title, task_pairs):
                 pet.species,
                 f"{task_type_icon(task.title)} {task.title}",
                 f"{task.duration_minutes} min",
-                task.priority,
+                priority_cell,
                 task.frequency,
                 task.due_date.isoformat(),
-                "done" if task.completed else "open",
+                status_cell,
             ]
         )
     print(table)
@@ -71,7 +103,7 @@ def main():
     owner = build_demo_owner()
     scheduler = Scheduler(owner)
 
-    print(f"PawPal+ schedule for {owner.name}")
+    print(colorize(f"PawPal+ schedule for {owner.name}", "bold"))
     print("=" * 32)
 
     print_schedule("📅 Today's Schedule", scheduler.todays_schedule())
@@ -92,13 +124,13 @@ def main():
     print_schedule("⭐ Today's Top 3 Priorities", scheduler.top_priorities(3))
 
     conflicts = scheduler.detect_conflicts(scheduler.todays_schedule())
-    print("⚠️ Conflict Warnings")
+    print(colorize("⚠️ Conflict Warnings", "bold"))
     print()
     if conflicts:
         for warning in conflicts:
-            print(f"  {warning}")
+            print(f"  {colorize(warning, 'red')}")
     else:
-        print("  No conflicts found.")
+        print(f"  {colorize('No conflicts found.', 'green')}")
     print()
 
     scheduler.mark_task_complete("Mochi", "Morning walk")

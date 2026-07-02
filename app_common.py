@@ -17,6 +17,7 @@ from pawpal_system import (
     format_time_12h,
     load_owners_from_json,
     pet_species_icon,
+    priority_icon,
     save_owners_to_json,
     task_type_icon,
 )
@@ -354,7 +355,7 @@ def task_rows(task_pairs):
             "Task": task.title,
             "Reason": task.notes or "—",
             "Duration": task.duration_minutes,
-            "Priority": task.priority,
+            "Priority": f"{priority_icon(task.priority)} {task.priority}",
             "Frequency": task.frequency,
             "Due Date": task.due_date.isoformat(),
             "Status": "✅ Done" if task.completed else "⏳ Open",

@@ -13,6 +13,7 @@ from pawpal_system import (
     find_owner,
     format_time_12h,
     pet_species_icon,
+    priority_icon,
     task_type_icon,
 )
 
@@ -44,6 +45,14 @@ def test_pet_species_icon_varies_by_species():
     assert pet_species_icon("Dog") == "🐕"
     assert pet_species_icon("other") == "🐾"
     assert pet_species_icon("iguana") == "🐾"
+
+
+def test_priority_icon_varies_by_level():
+    assert priority_icon("high") == "🔴"
+    assert priority_icon("medium") == "🟡"
+    assert priority_icon("low") == "🟢"
+    assert priority_icon("HIGH") == "🔴"
+    assert priority_icon("unknown") == "⚪"
 
 
 def test_format_time_12h_converts_24_hour_edge_cases():

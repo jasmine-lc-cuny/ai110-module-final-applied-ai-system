@@ -49,6 +49,20 @@ def pet_species_icon(species: str) -> str:
     return PET_SPECIES_ICONS.get(species.lower(), "🐾")
 
 
+# Priority -> traffic-light dot, shown next to the priority level in both the
+# CLI tables and the Streamlit schedule tables.
+PRIORITY_ICONS = {
+    "high": "🔴",
+    "medium": "🟡",
+    "low": "🟢",
+}
+
+
+def priority_icon(priority: str) -> str:
+    """Return a traffic-light emoji for a task's priority level."""
+    return PRIORITY_ICONS.get(priority.lower(), "⚪")
+
+
 def format_time_12h(time_str: str) -> str:
     """Convert a stored 24-hour "HH:MM" time to a 12-hour "H:MM AM/PM" display string.
 
