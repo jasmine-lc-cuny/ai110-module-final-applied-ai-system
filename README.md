@@ -8,6 +8,7 @@ verified through `main.py` and pytest before being connected to the UI in
 
 ## Features
 
+- A multi-page Streamlit app: a Home landing page with a "Book a Service" picker (Grooming, Sitting, Training, Walking, Veterinary, Special Services), a dedicated "My Pets & Schedule" page for full pet/task management, and one page per service category showing just that category's tasks with a quick-add form.
 - Add an owner, pets, and scheduled care tasks, choosing a task title from a dropdown of common care tasks (or "Other (custom)" for anything else).
 - Edit or delete a pet from the Streamlit UI (deletion disambiguated by species/age/task count so similarly-named pets aren't mixed up).
 - Edit a task's title, time, duration, priority, or frequency; delete a task outright; or reopen one that was marked complete by mistake.
@@ -33,7 +34,7 @@ Run the CLI demo:
 python main.py
 ```
 
-Run the Streamlit app:
+Run the Streamlit app (still `app.py` — it's now the multi-page entry point, with each page's content in `pages/`):
 
 ```bash
 python -m streamlit run app.py
@@ -158,11 +159,11 @@ time zones, overlapping durations, and saved data across app restarts.
 
 ## Demo Walkthrough
 
-1. The user enters their owner name in the sidebar, and can filter every schedule view below by pet and by status (Open/Done/All).
-2. The user adds pets such as Mochi the dog and Luna the cat (name, species, sex, and age), edits any of those fields later, or deletes a pet (with all its tasks) from dropdowns under the pets table.
-3. The user schedules care tasks by picking a title from a dropdown of common tasks (or "Other (custom)"), plus a time (hour/minute/AM-PM), duration, priority, and frequency. An existing task's title/time/duration/priority/frequency can also be edited later from a dropdown next to "Edit a pet".
-4. A "Today's Highlights" section mirrors the CLI's views for tasks due today, scoped by the sidebar's pet/status filters — 📅 Today's Schedule, ❗ High Priority First, 🚨 Next Urgent Task, and ⭐ Today's Top 3 Priorities — plus ⚠️ Conflict Warnings when two open tasks share the same date and time.
-5. When the user marks a daily or weekly task complete, PawPal+ creates the next occurrence automatically. A task can also be deleted outright, or reopened if it was marked complete by mistake.
+1. **Home** greets the user with a "Book a Service" picker — six cards (Grooming, Sitting, Training, Walking, Veterinary, Special Services) plus a link to "My Pets & Full Schedule" — and a Quick Glance of pet/open-task/conflict counts.
+2. On **My Pets & Schedule**, the user enters their owner name in the sidebar (filters every schedule view by pet and by status), adds pets (name, species, sex, age), edits or deletes them, and schedules care tasks by picking a title from a dropdown of common tasks (or "Other (custom)"), plus a time (hour/minute/AM-PM), duration, priority, and frequency. An existing task's title/time/duration/priority/frequency can also be edited from a dropdown next to "Edit a pet".
+3. A "Today's Highlights" section on that page mirrors the CLI's views for tasks due today, scoped by the sidebar's pet/status filters — 📅 Today's Schedule, ❗ High Priority First, 🚨 Next Urgent Task, and ⭐ Today's Top 3 Priorities — plus ⚠️ Conflict Warnings when two open tasks share the same date and time.
+4. When the user marks a daily or weekly task complete, PawPal+ creates the next occurrence automatically. A task can also be deleted outright, or reopened if it was marked complete by mistake.
+5. Each **service category page** (e.g. Walking) shows only that category's tasks — matched by `task_type_icon()` — with its own quick-add form (pre-scoped to relevant task titles) and a "Mark complete" action. Sitting and Training are placeholders for now, since no task types map to them yet.
 
 Sample CLI output from `python main.py` (same run shown in the Sample Output section above):
 
@@ -244,5 +245,9 @@ Reloaded Schedule (from main_demo_data.json)
 - Final UML: `diagrams/uml_final.mmd`
 - Backend logic: `pawpal_system.py`
 - CLI verification: `main.py`
-- Streamlit UI: `app.py`
+- Streamlit UI: `app.py` (multi-page entry point — sets up `st.navigation()` and renders the Home landing page), `app_common.py` (shared state/helpers used by every page — `get_owner()`, `save_owner()`, `task_rows()`, category-to-icon mapping, `render_category_page()`, `render_placeholder_page()`), `pages/pets_and_schedule.py` (full pet/task management, moved intact from the original single-page `app.py`), `pages/{grooming,walking,veterinary,special_services}.py` (functional service-category pages built on `render_category_page()`), `pages/{sitting,training}.py` (placeholder pages — no matching task types yet)
 - Tests: `tests/test_pawpal.py`
+
+### A note on `st.selectbox()` and object identity
+
+Several pages select a `Pet` or `Task` from a dropdown and then mutate it directly (edit a pet's name, add a task to a pet, mark a task complete, delete a task). Early versions of these features passed the live objects as `options` and used whatever `st.selectbox()` returned — under Streamlit's `AppTest` testing framework, that returned object is not guaranteed to be the same instance as the one inside `owner.pets`/`pet.tasks`, so mutating it silently edited a throwaway copy instead of the real data (confirmed via `id()` mismatches). Every such selectbox in this app now selects an **index** and re-fetches the live object from `owner.pets[i]` (or the equivalent list) immediately before use, which sidesteps the issue regardless of its root cause. Each fix was verified with a real `AppTest` interaction — select a value, submit, then check `data.json` on disk — not just a headless boot check.
