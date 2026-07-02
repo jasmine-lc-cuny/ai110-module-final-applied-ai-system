@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 
-from pawpal_system import Owner, Pet, Scheduler, Task, task_type_icon
+from pawpal_system import Owner, Pet, Scheduler, Task, format_time_12h, task_type_icon
 
 
 def test_task_type_icon_varies_by_task_title():
@@ -13,6 +13,26 @@ def test_task_type_icon_varies_by_task_title():
     assert task_type_icon("Trim Nails") == "💅"
     assert task_type_icon("Vet checkup") == "🏥"
     assert task_type_icon("Something unrelated") == "🐾"
+
+
+def test_format_time_12h_converts_24_hour_edge_cases():
+    assert format_time_12h("00:00") == "12:00 AM"
+    assert format_time_12h("07:30") == "7:30 AM"
+    assert format_time_12h("12:00") == "12:00 PM"
+    assert format_time_12h("13:05") == "1:05 PM"
+    assert format_time_12h("23:59") == "11:59 PM"
+
+
+def test_sort_by_time_still_uses_24_hour_storage_for_correct_ordering():
+    owner = Owner("Jordan")
+    pet = Pet("Luna", "cat")
+    pet.add_task(Task("Lunch", "12:00", 10))
+    pet.add_task(Task("Breakfast", "07:30", 10))
+    owner.add_pet(pet)
+
+    sorted_tasks = Scheduler(owner).sort_by_time()
+
+    assert [task.title for _, task in sorted_tasks] == ["Breakfast", "Lunch"]
 
 
 def test_task_completion_marks_status():
@@ -186,7 +206,7 @@ def test_conflict_detection_flags_duplicate_times():
     warnings = Scheduler(owner).detect_conflicts()
 
     assert len(warnings) == 1
-    assert "08:00" in warnings[0]
+    assert "8:00 AM" in warnings[0]
     assert "Mochi: Morning walk" in warnings[0]
     assert "Luna: Brush coat" in warnings[0]
 

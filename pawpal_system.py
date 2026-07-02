@@ -32,6 +32,19 @@ def task_type_icon(title: str) -> str:
     return "🐾"
 
 
+def format_time_12h(time_str: str) -> str:
+    """Convert a stored 24-hour "HH:MM" time to a 12-hour "H:MM AM/PM" display string.
+
+    Task.time stays in 24-hour format internally because sort_by_time() relies
+    on "HH:MM" strings sorting the same as their chronological order; this is
+    purely a display-layer conversion.
+    """
+    hour, minute = map(int, time_str.split(":"))
+    period = "AM" if hour < 12 else "PM"
+    display_hour = hour % 12 or 12
+    return f"{display_hour}:{minute:02d} {period}"
+
+
 @dataclass
 class Task:
     """Represent one scheduled pet care activity."""
@@ -81,7 +94,7 @@ class Task:
         status = "✅ done" if self.completed else "⏳ open"
         icon = task_type_icon(self.title)
         return (
-            f"{icon} {self.time} - {pet_prefix}{self.title} "
+            f"{icon} {format_time_12h(self.time)} - {pet_prefix}{self.title} "
             f"({self.duration_minutes} min, {self.priority}, "
             f"{self.frequency}, {self.due_date.isoformat()}, {status})"
         )
@@ -272,7 +285,7 @@ class Scheduler:
             if len(labels) > 1:
                 joined = ", ".join(labels)
                 warnings.append(
-                    f"Conflict on {due_date.isoformat()} at {time}: {joined}"
+                    f"Conflict on {due_date.isoformat()} at {format_time_12h(time)}: {joined}"
                 )
 
         return warnings

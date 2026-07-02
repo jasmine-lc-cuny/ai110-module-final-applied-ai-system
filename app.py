@@ -2,7 +2,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from pawpal_system import Owner, Pet, Scheduler, Task, task_type_icon
+from pawpal_system import Owner, Pet, Scheduler, Task, format_time_12h, task_type_icon
 
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="wide")
@@ -25,7 +25,7 @@ def task_rows(task_pairs):
     return [
         {
             "Type": task_type_icon(task.title),
-            "Time": task.time,
+            "Time": format_time_12h(task.time),
             "Pet": pet.name,
             "Species": pet.species,
             "Task": task.title,

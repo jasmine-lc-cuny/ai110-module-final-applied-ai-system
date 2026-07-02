@@ -2,7 +2,7 @@ from datetime import date
 
 from prettytable import PrettyTable, TableStyle
 
-from pawpal_system import Owner, Pet, Scheduler, Task, task_type_icon
+from pawpal_system import Owner, Pet, Scheduler, Task, format_time_12h, task_type_icon
 
 
 def build_demo_owner():
@@ -43,7 +43,7 @@ def print_schedule(title, task_pairs):
     for pet, task in task_pairs:
         table.add_row(
             [
-                task.time,
+                format_time_12h(task.time),
                 pet.name,
                 pet.species,
                 f"{task_type_icon(task.title)} {task.title}",
