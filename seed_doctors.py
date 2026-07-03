@@ -15,7 +15,8 @@ CLINIC_PATH = "clinic.json"
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-DOCTOR_PROFILES = [
+# Single source of truth for the clinic's doctor roster.
+DOCTOR_ROSTER = [
     ("Ava", "Patel", "general", "General Practice", "Primary Care", "DVM", 85.0),
     ("Noah", "Kim", "surgery", "Surgery", "Soft Tissue Surgery", "DVM, DACVS", 145.0),
     ("Mia", "Johnson", "dent", "Dentistry", "Oral Health", "DVM", 110.0),
@@ -35,7 +36,7 @@ def seed_doctors():
         clinic = Clinic()
 
     clinic.doctors = []
-    for first_name, last_name, username, department, specialization, education, fee in DOCTOR_PROFILES:
+    for first_name, last_name, username, department, specialization, education, fee in DOCTOR_ROSTER:
         clinic.doctors.append(
             Doctor(
                 first_name=first_name,
