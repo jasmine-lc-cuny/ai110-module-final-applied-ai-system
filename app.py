@@ -13,6 +13,7 @@ from app_common import get_combined_owner, get_scheduler
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="wide")
 
 SERVICES = [
+    ("🛎️", "Service Dashboard", "pages/book_service_dashboard.py"),
     ("🛁", "Grooming", "pages/grooming.py"),
     ("🏠", "Sitting", "pages/sitting.py"),
     ("🎓", "Training", "pages/training.py"),
@@ -47,6 +48,12 @@ def home_page():
         icon="➡️",
         use_container_width=True,
     )
+    st.page_link(
+        "pages/book_service_dashboard.py",
+        label="🛎️ Dashboard - Book a Service",
+        icon="➡️",
+        use_container_width=True,
+    )
 
     st.divider()
     st.subheader("Quick Glance")
@@ -71,6 +78,7 @@ pg = st.navigation(
             st.Page("pages/task.py", title="Task", icon="📝"),
         ],
         "🛎️ Book a Service": [
+            st.Page("pages/book_service_dashboard.py", title="Service Dashboard", icon="🛎️"),
             st.Page("pages/grooming.py", title="Grooming", icon="🛁"),
             st.Page("pages/sitting.py", title="Sitting", icon="🏠"),
             st.Page("pages/training.py", title="Training", icon="🎓"),
