@@ -42,8 +42,8 @@ def home_page():
 
     st.divider()
     st.page_link(
-        "pages/pets_and_schedule.py",
-        label="🐾 Pet Profile",
+        "pages/dashboard.py",
+        label="📊 Dashboard - 🐾 Pet Profile",
         icon="➡️",
         use_container_width=True,
     )
@@ -65,8 +65,7 @@ pg = st.navigation(
     {
         "": [st.Page(home_page, title="Home", icon="🏠", url_path="home", default=True)],
         "🐾 PawPal Manage": [
-            st.Page("pages/dashboard.py", title="Dashboard", icon="📊"),
-            st.Page("pages/pets_and_schedule.py", title="Pet Profile", icon="🐾"),
+            st.Page("pages/dashboard.py", title="Dashboard - Pet Profile", icon="📊"),
             st.Page("pages/todays_schedule.py", title="Today's Schedule", icon="📅"),
             st.Page("pages/calendar.py", title="Calendar", icon="🗓️"),
             st.Page("pages/task.py", title="Task", icon="📝"),
