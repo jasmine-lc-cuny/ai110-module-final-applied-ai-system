@@ -25,6 +25,13 @@ DOCTOR_ROSTER = [
     ("Ethan", "Brown", "urgent", "Emergency", "Urgent Care", "DVM", 130.0),
     ("Nora", "Davis", "cardio", "Cardiology", "Cardiology", "DVM, DACVIM", 150.0),
     ("Levi", "Wilson", "ortho", "Orthopedics", "Orthopedic Surgery", "DVM", 135.0),
+    ("Sarah", "Chen", "oncology", "Oncology", "Cancer Treatment", "DVM", 165.0),
+    ("Marcus", "Vane", "neurology", "Neurology", "Brain & Spinal Disorders", "DVM", 175.0),
+    ("Elena", "Rossi", "ophthalmology", "Ophthalmology", "Eye Diseases & Surgery", "DVM", 140.0),
+    ("Sam", "Reed", "rehab", "Rehabilitation", "Physical Therapy & Mobility", "DVM", 95.0),
+    ("Chloe", "Thorne", "behavior", "Behavior", "Anxiety & Behavioral Issues", "DVM", 130.0),
+    ("David", "Park", "internal", "Internal Medicine", "Chronic/Complex Diseases", "DVM", 155.0),
+    ("Fiona", "Banks", "radiology", "Radiology", "Imaging (Ultrasound/MRI/CT)", "DVM", 125.0),
 ]
 
 
