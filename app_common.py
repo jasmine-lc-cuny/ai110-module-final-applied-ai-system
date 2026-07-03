@@ -537,39 +537,45 @@ def render_category_page(
     else:
         st.subheader(f"Schedule a {display_name} Task")
 
-        # Pet and Task live outside the form (like the "Other (custom)"
-        # reveal elsewhere) so the veterinary Reason sub-picker below can
-        # react immediately to which one is selected — widgets inside
-        # st.form don't trigger a rerun until the whole form is submitted.
-        # Index-based, then re-fetch owner.pets[i] fresh at submit time —
-        # st.selectbox() isn't guaranteed to hand back the same live object
-        # across reruns, and add_task() mutates a list on that object, so a
-        # copy would silently lose the new task.
-        # Labels precomputed into a plain list so the format_func closes over
-        # no session state (see pet_label's docstring). Walking shows the
-        # pet's species instead of its owner per request; the "N." prefix
-        # keeps every label unique either way (same-named pets exist).
-        real_owners = get_owners()
-        if category == "walking":
-            pet_labels = [
-                f"{i + 1}. {pet_species_icon(pet.species)} {pet.name} ({pet.species})"
-                for i, pet in enumerate(owner.pets)
-            ]
-        else:
-            pet_labels = [
-                f"{i + 1}. {pet_label(pet, real_owners)}" for i, pet in enumerate(owner.pets)
-            ]
+        # Owner and Pet cascade as two dropdowns: pick the owner, then that
+        # owner's pets as "name (species)". Both live outside the form (like
+        # the "Other (custom)" reveal elsewhere) so the pet list and the
+        # veterinary/menu sub-pickers below react immediately — widgets
+        # inside st.form don't trigger a rerun until submit. Index-based,
+        # then re-fetch the live objects at submit time — st.selectbox()
+        # isn't guaranteed to hand back the same live object across reruns.
+        # Labels precomputed into plain lists so the format_func closes over
+        # no session state (see pet_label's docstring); the "N." prefix
+        # keeps labels unique (same-named owners/pets exist).
+        owners_with_pets = [candidate for candidate in get_owners() if candidate.pets]
+        owner_labels = [
+            f"{i + 1}. {candidate.name}" for i, candidate in enumerate(owners_with_pets)
+        ]
+        selected_owner_index = st.selectbox(
+            "Owner",
+            range(len(owners_with_pets)),
+            format_func=lambda i: owner_labels[i],
+            key=f"{category}_owner_select",
+        )
+        selected_owner = owners_with_pets[selected_owner_index]
+
+        pet_labels = [
+            f"{i + 1}. {pet_species_icon(pet.species)} {pet.name} ({pet.species})"
+            for i, pet in enumerate(selected_owner.pets)
+        ]
         selected_pet_index = st.selectbox(
             "Pet",
-            range(len(owner.pets)),
+            range(len(selected_owner.pets)),
             format_func=lambda i: pet_labels[i],
-            key=f"{category}_pet_select",
+            # Keyed per owner: the options list changes with the owner, and
+            # reusing one key across different option lists leaves stale state.
+            key=f"{category}_pet_select_{selected_owner_index}",
         )
         title = st.selectbox("Task", title_options, key=f"{category}_title_select")
 
         reason = None
         if category == "veterinary":
-            selected_species = owner.pets[selected_pet_index].species
+            selected_species = selected_owner.pets[selected_pet_index].species
             reason = render_veterinary_reason_picker(title, selected_species, key_prefix=category)
         elif category == "special_services":
             reason = _render_dog_cafe_menu_picker()
@@ -605,7 +611,7 @@ def render_category_page(
             hour_24 = hour_12 % 12
             if period == "PM":
                 hour_24 += 12
-            selected_pet = owner.pets[selected_pet_index]
+            selected_pet = selected_owner.pets[selected_pet_index]
             selected_pet.add_task(
                 Task(
                     title=title,
