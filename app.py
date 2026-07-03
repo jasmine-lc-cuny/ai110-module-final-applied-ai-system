@@ -75,7 +75,7 @@ pg = st.navigation(
             st.Page("pages/dashboard.py", title="Dashboard - Pet Profile", icon="📊"),
             st.Page("pages/todays_schedule.py", title="Today's Schedule", icon="📅"),
             st.Page("pages/calendar.py", title="Calendar", icon="🗓️"),
-            st.Page("pages/task.py", title="Task", icon="📝"),
+            st.Page("pages/task.py", title="Task Hub", icon="📝"),
         ],
         "🛎️ Book a Service": [
             st.Page("pages/book_service_dashboard.py", title="Service Dashboard", icon="🛎️"),

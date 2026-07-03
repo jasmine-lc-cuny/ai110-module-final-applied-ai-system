@@ -21,10 +21,14 @@ Senior-onset conditions (e.g., feline kidney disease) are age-gated.
 """
 
 import random
+import sys
 
 from pawpal_system import Owner, Pet, save_owners_to_json
 
 DATA_PATH = "data.json"
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 # Combined master list: all unique owner names from the three original
 # seeders (seed_master + seed_massive + seed_all_species), no duplicates.

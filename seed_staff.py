@@ -6,12 +6,16 @@ Sections and their staff counts mirror the "Book a Service" menu.
 """
 
 import random
+import sys
 from pathlib import Path
 
 from pawpal_system import Clinic, Staff
 
 CLINIC_PATH = "clinic.json"
 STAFF_PER_SECTION = 3  # bump this to grow every team at once
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 # Job titles offered per service section (first entry reads as the "lead").
 SECTION_ROLES = {

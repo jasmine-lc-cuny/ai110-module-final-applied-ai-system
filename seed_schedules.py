@@ -14,6 +14,7 @@ schedule layer from scratch (pet profiles are untouched).
 """
 
 import random
+import sys
 from datetime import date, timedelta
 
 from pawpal_system import (
@@ -28,6 +29,9 @@ from pawpal_system import (
 
 DATA_PATH = "data.json"
 CLINIC_PATH = "clinic.json"
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 # The "today" the seeded schedule is anchored to, so the "due today" batch and
 # its deliberate conflicts land on a specific demo date instead of whatever

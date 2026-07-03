@@ -228,7 +228,41 @@ CATEGORY_TO_SECTION = {
 # ==========================================
 # 💾 STATE MANAGEMENT & DATA PERSISTENCE
 # ==========================================
+
+def ensure_demo_data() -> None:
+    """Seed the demo roster and schedule if the local data files are missing."""
+    owners_missing_or_empty = True
+    if DATA_PATH.exists():
+        try:
+            owners_missing_or_empty = not load_owners_from_json(str(DATA_PATH))
+        except Exception:
+            owners_missing_or_empty = True
+
+    clinic_missing = not CLINIC_DATA_PATH.exists()
+
+    if not owners_missing_or_empty and not clinic_missing:
+        return
+
+    if owners_missing_or_empty:
+        from species_master_list import seed_master_list
+
+        seed_master_list()
+
+    if clinic_missing:
+        from seed_staff import seed_staff
+
+        seed_staff()
+
+    if owners_missing_or_empty:
+        from seed_schedules import seed_schedules
+
+        seed_schedules()
+
+    st.session_state.pop("owners", None)
+    st.session_state.pop("clinic", None)
+
 def get_owners() -> list[Owner]:
+    ensure_demo_data()
     if "owners" not in st.session_state:
         if DATA_PATH.exists():
             st.session_state.owners = load_owners_from_json(str(DATA_PATH))
@@ -252,6 +286,7 @@ def save_owner(owner: Owner) -> None:
     save_owners(get_owners())
 
 def get_clinic() -> Clinic:
+    ensure_demo_data()
     if "clinic" not in st.session_state:
         if CLINIC_DATA_PATH.exists():
             st.session_state.clinic = Clinic.load_from_json(str(CLINIC_DATA_PATH))
