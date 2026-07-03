@@ -64,11 +64,12 @@ def home_page():
 pg = st.navigation(
     {
         "": [st.Page(home_page, title="Home", icon="🏠", url_path="home", default=True)],
-        "Manage": [
+        "🐾 PawPal Manage": [
             st.Page("pages/dashboard.py", title="Dashboard", icon="📊"),
             st.Page("pages/pets_and_schedule.py", title="Pet Profile", icon="🐾"),
             st.Page("pages/todays_schedule.py", title="Today's Schedule", icon="📅"),
             st.Page("pages/calendar.py", title="Calendar", icon="🗓️"),
+            st.Page("pages/task.py", title="Task", icon="📝"),
         ],
         "🛎️ Book a Service": [
             st.Page("pages/grooming.py", title="Grooming", icon="🛁"),
@@ -80,7 +81,6 @@ pg = st.navigation(
         "🩺 Veterinarian": [
             st.Page("pages/clinic_dashboard.py", title="Clinic Dashboard", icon="🏥"),
             st.Page("pages/appointments.py", title="Appointments", icon="📋"),
-            st.Page("pages/task.py", title="Task", icon="📝"),
             st.Page("pages/doctors.py", title="Doctors", icon="👩‍⚕️"),
             st.Page("pages/services.py", title="Services", icon="💲"),
             st.Page("pages/patients.py", title="Patients", icon="🧾"),

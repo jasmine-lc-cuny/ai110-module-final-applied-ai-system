@@ -205,11 +205,9 @@ CATEGORY_TASK_TITLES = {
 
 # ==========================================
 # 💾 STATE MANAGEMENT & DATA PERSISTENCE
-# Functions that read from and write to data.json and clinic.json
 # ==========================================
 
 def get_owners() -> list[Owner]:
-    """Return every owner in this session, loading them from data.json once if needed."""
     if "owners" not in st.session_state:
         if DATA_PATH.exists():
             st.session_state.owners = load_owners_from_json(str(DATA_PATH))
@@ -218,26 +216,21 @@ def get_owners() -> list[Owner]:
     return st.session_state.owners
 
 def get_combined_owner() -> Owner:
-    """Return a synthetic Owner holding every pet across every owner for the clinic-wide views."""
     return Owner(
         "All Owners",
         pets=[pet for owner in get_owners() for pet in owner.pets],
     )
 
 def get_scheduler() -> Scheduler:
-    """Return a Scheduler across every owner's pets."""
     return Scheduler(get_combined_owner())
 
 def save_owners(owners: list[Owner]) -> None:
-    """Persist every owner (and their pets/tasks) to data.json."""
     save_owners_to_json(owners, str(DATA_PATH))
 
 def save_owner(owner: Owner) -> None:
-    """Persist all owners to data.json."""
     save_owners(get_owners())
 
 def get_clinic() -> Clinic:
-    """Return this session's Clinic, loading it from clinic.json once if needed."""
     if "clinic" not in st.session_state:
         if CLINIC_DATA_PATH.exists():
             st.session_state.clinic = Clinic.load_from_json(str(CLINIC_DATA_PATH))
@@ -246,21 +239,17 @@ def get_clinic() -> Clinic:
     return st.session_state.clinic
 
 def save_clinic(clinic: Clinic) -> None:
-    """Persist the clinic's records to clinic.json."""
     clinic.save_to_json(str(CLINIC_DATA_PATH))
 
 # ==========================================
 # 📎 FILE UPLOAD UTILITIES
-# Logic to safely store and retrieve uploaded X-rays/records
 # ==========================================
 
 def slugify_for_path(name: str) -> str:
-    """Turn an owner/pet name into a filesystem-safe folder name segment."""
     slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
     return slug or "unnamed"
 
 def save_uploaded_document(owner: Owner, pet: Pet, category: str, uploaded_file) -> Document:
-    """Save an st.file_uploader() file to disk and return a Document referencing it."""
     pet_dir = UPLOADS_PATH / f"{slugify_for_path(owner.name)}__{slugify_for_path(pet.name)}"
     pet_dir.mkdir(parents=True, exist_ok=True)
     stored_name = f"{uuid.uuid4().hex[:8]}_{uploaded_file.name}"
@@ -270,21 +259,16 @@ def save_uploaded_document(owner: Owner, pet: Pet, category: str, uploaded_file)
     return Document(category=category, filename=uploaded_file.name, path=str(stored_path))
 
 def delete_uploaded_document(document: Document) -> None:
-    """Remove an uploaded document's file from disk, if it still exists."""
     Path(document.path).unlink(missing_ok=True)
 
 # ==========================================
 # 🏷️ UI FORMATTERS & DATA PARSERS
-# Functions to make labels, rows, and tables look clean in the app
 # ==========================================
 
 def pet_label(pet: Pet, owners: list[Owner]) -> str:
-    """Return '🐈 Garfield (cat)' formatting for dropdown lists without cluttering owner name."""
     return f"{pet_species_icon(pet.species)} {pet.name} ({pet.species})"
 
 def task_pair_label(index: int, pet: Pet, task: Task, owners: list[Owner]) -> str:
-    """Return a unique dropdown label for a specific task to prevent duplication errors."""
-    # We include owner name here just to be safe when completing tasks
     owner_name = next((o.name for o in owners if pet in o.pets), "Unknown")
     return (
         f"{index + 1}. {pet_species_icon(pet.species)} {pet.name} ({owner_name}) | {task_type_icon(task.title)} {task.title} "
@@ -292,7 +276,6 @@ def task_pair_label(index: int, pet: Pet, task: Task, owners: list[Owner]) -> st
     )
 
 def task_rows(task_pairs):
-    """Convert raw scheduler task data into Streamlit table-friendly dictionaries."""
     return [
         {
             "Type": task_type_icon(task.title),
@@ -311,7 +294,6 @@ def task_rows(task_pairs):
     ]
 
 def tasks_in_category(owner: Owner, category: str):
-    """Filter tasks down to a specific service category (e.g. Grooming tasks only)."""
     icons = SERVICE_CATEGORY_ICONS.get(category, set())
     return [
         (pet, task)
@@ -321,11 +303,9 @@ def tasks_in_category(owner: Owner, category: str):
 
 # ==========================================
 # 🎛️ CUSTOM SUB-MENU PICKERS
-# The cascading selection logic for Vet conditions and Dog Cafe menus
 # ==========================================
 
 def render_veterinary_reason_picker(title: str, species: str, key_prefix: str = "vet") -> str | None:
-    """Show an extra 'Reason' sub-picker dynamically based on the chosen Vet Task."""
     species_key = species.lower()
 
     if title == "Injection Medication":
@@ -346,7 +326,6 @@ def render_veterinary_reason_picker(title: str, species: str, key_prefix: str = 
     return None
 
 def _render_dog_cafe_menu_picker() -> str:
-    """Show the Dog Cafes two-step Menu section -> Item picker for RSVP selection."""
     section_index = st.selectbox(
         "Menu", range(len(A_LA_BARK_MENU)), format_func=lambda i: A_LA_BARK_MENU[i][0], key="dog_cafe_menu_section"
     )
@@ -358,36 +337,42 @@ def _render_dog_cafe_menu_picker() -> str:
     st.caption(items[item_index][2])
     return item_labels[item_index]
 
-
 # ==========================================
 # 🏗️ MAIN CATEGORY PAGE BUILDER (THE ENGINE)
-# The master function that renders Grooming, Walking, Dog Cafes, and Vet Tasks
 # ==========================================
 def render_category_page(
-    category: str, display_name: str, icon: str, page_title: str | None = None
+    category: str, 
+    display_name: str, 
+    icon: str, 
+    page_title: str | None = None,
+    page_subtitle: str | None = None
 ) -> None:
-    """Render a full 'Book a Service' category page: quick-add form, filtered
-    schedule, and a complete-task action, all scoped to this category.
-    """
     owner = get_combined_owner()
     scheduler = get_scheduler()
 
     st.title(page_title if page_title else f"{icon} {display_name}")
 
+    if "ui_alert_success" in st.session_state:
+        st.success(st.session_state.pop("ui_alert_success"))
+    if "ui_alert_warning" in st.session_state:
+        st.warning(st.session_state.pop("ui_alert_warning"))
+
     category_tasks = scheduler.sort_by_time(tasks_in_category(owner, category))
     title_options = CATEGORY_TASK_TITLES.get(category, [])
 
-    # ✅ CORRECTED IF / ELIF / ELSE STRUCTURE
     if not owner.pets:
         st.warning("Add a pet before scheduling tasks here.")
         st.page_link("pages/patients.py", label="Go to Patients", icon="🧾")
     elif not title_options:
         st.info(f"{display_name} isn't wired up to specific task types yet.")
     else:
-        st.subheader(f"Schedule a {display_name} Task")
+        # Use custom subtitle if provided, otherwise default to "Schedule a [Service] Task"
+        if page_subtitle:
+            st.subheader(page_subtitle)
+        else:
+            st.subheader(f"Schedule a {display_name} Task")
 
         if category == "veterinary":
-            # --- CASCADING SPECIES GROUP & SPECIES FILTER (VET TASKS ONLY) ---
             PET_CATEGORIES = {
                 "🐶 General Companion": ["dog", "cat"],
                 "🐹 Exotic Small Pet": ["rabbit", "bunny", "hamster", "gerbil", "mouse", "mice", "rat", "chinchilla", "guinea pig", "ferret", "hedgehog", "sugar glider", "squirrel"],
@@ -423,7 +408,6 @@ def render_category_page(
                     target = selected_species_label.split(" ", 1)[-1].lower()
                     allowed_species = [target]
         else:
-            # --- SIMPLE DOGS & CATS FILTER (GROOMING, WALKING, DOG CAFES) ---
             species_filter = st.radio(
                 "Filter by Species",
                 ["All (Dogs & Cats)", "🐕 Dogs", "🐈 Cats"],
@@ -439,7 +423,6 @@ def render_category_page(
             else:
                 allowed_species = ["dog", "cat"]
 
-        # 1. Filter owners down to ONLY those who have pets matching the active filters
         owners_with_pets = []
         for candidate in get_owners():
             if not candidate.pets:
@@ -454,7 +437,6 @@ def render_category_page(
             if has_matching_pet:
                 owners_with_pets.append(candidate)
 
-        # Reset the owner index state safely if the list shrinks out of bounds
         if f"{category}_owner_index_state" not in st.session_state or st.session_state[f"{category}_owner_index_state"] >= len(owners_with_pets):
             st.session_state[f"{category}_owner_index_state"] = 0
 
@@ -463,7 +445,6 @@ def render_category_page(
         else:
             selected_owner = owners_with_pets[st.session_state[f"{category}_owner_index_state"]]
             
-            # 2. Filter the pet labels list to match the target species as well
             filtered_pets = []
             for i, pet in enumerate(selected_owner.pets):
                 if allowed_species is None or pet.species.lower() in allowed_species:
@@ -478,7 +459,6 @@ def render_category_page(
                 f"{i + 1}. {candidate.name}" for i, candidate in enumerate(owners_with_pets)
             ]
 
-            # --- ROW 1: Owner then Pet ---
             col1, col2 = st.columns(2)
             
             with col1:
@@ -492,7 +472,6 @@ def render_category_page(
                     st.session_state[f"{category}_owner_index_state"] = selected_owner_index
                     st.rerun()
 
-            # Create a safe string to represent our current filter state so the widget key is truly unique
             filter_state_key = "_".join(allowed_species) if allowed_species else "all"
 
             with col2:
@@ -504,7 +483,6 @@ def render_category_page(
                 )
                 selected_pet_index = filtered_pets[selected_filtered_index][0]
 
-            # --- ROW 2: Task then Reason ---
             col3, col4 = st.columns(2)
             
             with col3:
@@ -520,7 +498,6 @@ def render_category_page(
                 else:
                     st.text_input("Reason", value="—", disabled=True, key=f"{category}_disabled_reason")
 
-            # --- SCHEDULING FORM LAYER ---
             with st.form(f"add_{category}_task_form", clear_on_submit=True):
                 st.write("Time")
                 hour_col, minute_col, period_col = st.columns(3)
@@ -536,7 +513,6 @@ def render_category_page(
                     period = st.selectbox("AM/PM", ["AM", "PM"], label_visibility="collapsed")
 
                 if category == "special_services":
-                    # An RSVP doesn't need explicit scheduling configurations
                     duration, priority, frequency = 60, "medium", "once"
                     submitted = st.form_submit_button("Dog Cafe RSVP")
                 else:
@@ -551,11 +527,18 @@ def render_category_page(
                 hour_24 = hour_12 % 12
                 if period == "PM":
                     hour_24 += 12
+                
+                time_str = f"{hour_24:02d}:{minute}"
                 selected_pet = selected_owner.pets[selected_pet_index]
+
+                conflict = any(t.time == time_str and not t.completed for t in selected_pet.tasks)
+                if conflict:
+                    st.session_state["ui_alert_warning"] = f"⚠️ Schedule Conflict: {selected_pet.name} already has a task scheduled at {time_str}. Double-booking detected!"
+
                 selected_pet.add_task(
                     Task(
                         title=title,
-                        time=f"{hour_24:02d}:{minute}",
+                        time=time_str,
                         duration_minutes=int(duration),
                         priority=priority,
                         frequency=frequency,
@@ -563,10 +546,12 @@ def render_category_page(
                     )
                 )
                 save_owner(owner)
+                
                 success_message = f"Added {title} for {selected_pet.name}."
                 if reason:
                     success_message = f"Added {title} ({reason}) for {selected_pet.name}."
-                st.success(success_message)
+                
+                st.session_state["ui_alert_success"] = success_message
                 st.rerun()
 
     st.divider()
@@ -592,18 +577,21 @@ def render_category_page(
         if st.button("Mark complete", key=f"{category}_complete_button"):
             complete_pet, complete_task = open_category_tasks[complete_index]
             complete_task.mark_complete()
+            
             next_task = complete_task.next_occurrence(completed_on=date.today())
+            
+            msg = f"Completed {complete_task.title}."
             if next_task is not None:
                 complete_pet.add_task(next_task)
+                msg += " 🔁 New recurring task automatically generated for next time!"
+                
             save_owner(owner)
-            st.success(f"Completed {complete_task.title}.")
+            st.session_state["ui_alert_success"] = msg
             st.rerun()
 
     st.caption('Completing, deleting, and reopening tasks lives on "Today\'s Schedule".')
 
 def render_placeholder_page(display_name: str, icon: str) -> None:
-    """Render a clearly-labeled "coming soon" page for a service category that
-    doesn't have matching task types in TASK_TYPE_ICONS yet."""
     st.title(f"{icon} {display_name}")
     st.info(
         f"{display_name} isn't wired up to specific task types yet — this page "
