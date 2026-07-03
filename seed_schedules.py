@@ -29,6 +29,11 @@ from pawpal_system import (
 DATA_PATH = "data.json"
 CLINIC_PATH = "clinic.json"
 
+# The "today" the seeded schedule is anchored to, so the "due today" batch and
+# its deliberate conflicts land on a specific demo date instead of whatever
+# day happens to run this script. Set to None to use the real date.today().
+ANCHOR_DATE = date(2026, 7, 7)
+
 random.seed(2026)  # reproducible demo dataset
 
 
@@ -74,7 +79,7 @@ def seed_schedules():
         add(pet, title, time, "veterinary", due, priority="high",
             assignee=doctor.full_name, notes=reason or title, completed=(status == "Completed"))
 
-    today = date.today()
+    today = ANCHOR_DATE or date.today()
 
     # --- TODAY: give each task a unique slot so the only conflicts are the
     #     deliberate ones below. 09:00 and 14:00 are reserved for those. ---
