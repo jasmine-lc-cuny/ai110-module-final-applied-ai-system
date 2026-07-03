@@ -23,7 +23,7 @@ owners = get_owners()
 
 st.title("🧾 Patients")
 st.caption("Register, edit, and search patients (pets and their owners).")
-st.page_link("pages/pets_and_schedule.py", label="View the Pet Profile directory", icon="🐾")
+st.page_link("pages/dashboard.py", label="View the Pet Profile directory", icon="🐾")
 
 # ==========================================
 # ➕ NEW PATIENT REGISTRATION FORM
