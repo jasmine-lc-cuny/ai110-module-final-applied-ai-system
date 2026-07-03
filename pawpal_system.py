@@ -501,6 +501,55 @@ class Service:
 
 
 @dataclass
+class Staff:
+    """Represent one service-team member assigned to a bookable service section."""
+
+    first_name: str
+    last_name: str
+    username: str
+    section: str = ""       # bookable service, e.g. "Grooming", "Walking"
+    role: str = ""          # job title, e.g. "Senior Groomer"
+    phone: str | None = None
+    email: str | None = None
+    rate: float = 0.0       # per-session rate in $
+    active: bool = True
+
+    @property
+    def full_name(self) -> str:
+        """Return the staff member's display name, e.g. 'Jane Roe'."""
+        return f"{self.first_name} {self.last_name}".strip()
+
+    def to_dict(self) -> dict:
+        """Convert this staff member to a JSON-serializable dictionary."""
+        return {
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "username": self.username,
+            "section": self.section,
+            "role": self.role,
+            "phone": self.phone,
+            "email": self.email,
+            "rate": self.rate,
+            "active": self.active,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Staff:
+        """Rebuild a Staff member from a dictionary produced by to_dict()."""
+        return cls(
+            first_name=data["first_name"],
+            last_name=data["last_name"],
+            username=data["username"],
+            section=data.get("section", ""),
+            role=data.get("role", ""),
+            phone=data.get("phone"),
+            email=data.get("email"),
+            rate=data.get("rate", 0.0),
+            active=data.get("active", True),
+        )
+
+
+@dataclass
 class Appointment:
     """Represent one clinic appointment linking a pet to a doctor."""
 
@@ -547,11 +596,13 @@ class Clinic:
         doctors: list[Doctor] | None = None,
         services: list[Service] | None = None,
         appointments: list[Appointment] | None = None,
+        staff: list[Staff] | None = None,
     ):
         """Create a clinic, optionally seeded with existing records."""
         self.doctors = doctors if doctors is not None else []
         self.services = services if services is not None else []
         self.appointments = appointments if appointments is not None else []
+        self.staff = staff if staff is not None else []
 
     def find_doctor(self, username: str) -> Doctor | None:
         """Return the doctor with a matching username, if it exists."""
@@ -559,6 +610,17 @@ class Clinic:
             if doctor.username.lower() == username.lower():
                 return doctor
         return None
+
+    def find_staff(self, username: str) -> Staff | None:
+        """Return the staff member with a matching username, if it exists."""
+        for member in self.staff:
+            if member.username.lower() == username.lower():
+                return member
+        return None
+
+    def staff_in_section(self, section: str) -> list[Staff]:
+        """Return all staff assigned to a given service section."""
+        return [member for member in self.staff if member.section == section]
 
     def income(self) -> float:
         """Return total income: each Completed appointment's doctor's visit fee."""
@@ -577,6 +639,7 @@ class Clinic:
             "doctors": [doctor.to_dict() for doctor in self.doctors],
             "services": [service.to_dict() for service in self.services],
             "appointments": [appointment.to_dict() for appointment in self.appointments],
+            "staff": [member.to_dict() for member in self.staff],
         }
 
     @classmethod
@@ -591,6 +654,7 @@ class Clinic:
                 Appointment.from_dict(appointment_data)
                 for appointment_data in data.get("appointments", [])
             ],
+            staff=[Staff.from_dict(staff_data) for staff_data in data.get("staff", [])],
         )
 
     def save_to_json(self, path: str) -> None:

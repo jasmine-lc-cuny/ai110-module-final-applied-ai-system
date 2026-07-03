@@ -76,6 +76,7 @@ pg = st.navigation(
             st.Page("pages/training.py", title="Training", icon="🎓"),
             st.Page("pages/walking.py", title="Walking", icon="🐕"),
             st.Page("pages/special_services.py", title="Dog Cafes", icon="🍖"),
+            st.Page("pages/staff.py", title="Staff", icon="👥"),
         ],
         "🩺 Veterinarian": [
             st.Page("pages/clinic_dashboard.py", title="Clinic Dashboard", icon="🏥"),

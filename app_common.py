@@ -175,6 +175,16 @@ A_LA_BARK_MENU = [
     ),
 ]
 
+# The five bookable service sections staff can be assigned to. Kept here so the
+# staff page, the seeder, and the home-page service picker share one list.
+SERVICE_SECTIONS = [
+    ("🛁", "Grooming"),
+    ("🏠", "Sitting"),
+    ("🎓", "Training"),
+    ("🐕", "Walking"),
+    ("🍖", "Dog Cafes"),
+]
+
 COMMON_SERVICES = [
     ("Blood Work", 45.0),
     ("X-Ray", 100.0),

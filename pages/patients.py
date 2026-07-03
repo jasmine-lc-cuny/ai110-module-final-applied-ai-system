@@ -101,7 +101,6 @@ else:
             pet_spayed_neutered = st.selectbox("Spayed/Neutered", SPAYED_NEUTERED_OPTIONS)
         with health_cols[1]:
             pet_allergies = st.text_input("Allergies")
-            pet_blood_type = st.text_input("Blood group")
         pet_behavioral_notes = st.text_area("Behavioral Notes")
         medical_history = st.text_area("Medical history (one condition per line)")
 
@@ -155,7 +154,6 @@ else:
                     microchip_number=pet_microchip.strip() or None,
                     spayed_neutered=pet_spayed_neutered if pet_spayed_neutered != "Unknown" else None,
                     allergies=pet_allergies.strip() or None,
-                    blood_type=pet_blood_type.strip() or None,
                     behavioral_notes=pet_behavioral_notes.strip() or None,
                     chronic_conditions=[
                         line.strip() for line in medical_history.splitlines() if line.strip()
@@ -278,7 +276,6 @@ else:
                 )
             with edit_health_cols[1]:
                 edited_allergies = st.text_input("Allergies", value=edit_pet.allergies or "", key=f"edit_pet_allergies_{edit_index}")
-                edited_blood_type = st.text_input("Blood group", value=edit_pet.blood_type or "", key=f"edit_pet_blood_type_{edit_index}")
             
             edited_behavioral_notes = st.text_area("Behavioral Notes", value=edit_pet.behavioral_notes or "", key=f"edit_pet_behavioral_notes_{edit_index}")
             edited_medical_history = st.text_area(
@@ -323,7 +320,6 @@ else:
             edit_pet.microchip_number = edited_microchip.strip() or None
             edit_pet.spayed_neutered = edited_spayed_neutered if edited_spayed_neutered != "Unknown" else None
             edit_pet.allergies = edited_allergies.strip() or None
-            edit_pet.blood_type = edited_blood_type.strip() or None
             edit_pet.behavioral_notes = edited_behavioral_notes.strip() or None
             edit_pet.chronic_conditions = [line.strip() for line in edited_medical_history.splitlines() if line.strip()]
             edit_pet.diet_good = [line.strip() for line in edited_diet_good.splitlines() if line.strip()]
@@ -384,7 +380,6 @@ def render_patient_cards(patient_list):
             st.write(f"**Microchip #:** {pet.microchip_number or '—'}")
             st.write(f"**Spayed/Neutered:** {pet.spayed_neutered or 'Unknown'}")
             st.write(f"**Allergies:** {pet.allergies or '—'}")
-            st.write(f"**Blood group:** {pet.blood_type or '—'}")
             st.write(f"**Behavioral Notes:** {pet.behavioral_notes or '—'}")
             
             if hasattr(pet, 'diet_good') and pet.diet_good:
