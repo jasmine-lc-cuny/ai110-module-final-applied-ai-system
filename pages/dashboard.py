@@ -222,3 +222,140 @@ else:
                 )
         else:
             st.caption("No upcoming appointments.")
+
+# ==========================================
+# 📊 CATEGORIZED PATIENTS DIRECTORY (TABS)
+# ==========================================
+st.divider()
+st.subheader("Patients Directory")
+
+PET_CATEGORIES = {
+    "🐶 General Companion": ["dog", "cat"],
+    "🐹 Exotic Small Pet": ["rabbit", "bunny", "hamster", "gerbil", "mouse", "mice", "rat", "chinchilla", "guinea pig", "ferret", "hedgehog", "sugar glider", "squirrel"],
+    "🦜 Exotic Avian": ["budgie", "canary", "finch", "parrot", "cockatiel", "conure", "chicken", "duck", "goose", "pigeon", "owl", "falcon", "snowy owl"],
+    "🦎 Reptiles & Amphibians": ["bearded dragon", "leopard gecko", "crested gecko", "chameleon", "iguana", "skink", "turtle", "tortoise", "corn snake", "ball python", "king snake", "frog", "toad", "newt", "salamander"],
+    "🐠 Fish & Invertebrates": ["betta", "guppy", "platy", "swordtail", "molly", "tetra", "goldfish", "danio", "minnow", "cichlid", "pleco", "clownfish", "damselfish", "goby", "blenny"]
+}
+
+selected_group = st.radio(
+    "Filter by Species Group",
+    options=list(PET_CATEGORIES.keys()),
+    horizontal=True,
+    key="dashboard_directory_group"
+)
+
+search_query = st.text_input("Search by pet or owner name", key="dashboard_search")
+
+def render_patient_cards(patient_list):
+    if not patient_list:
+        st.info("No patients matching this sub-category.")
+        return
+        
+    for owner, pet in patient_list:
+        status_flag = "" if pet.status == "Alive" else " 🪦"
+        with st.expander(f"{pet_species_icon(pet.species)} {pet.name}{status_flag} — owned by {owner.name}"):
+            info_cols = st.columns(4)
+            info_cols[0].metric("Species", pet.species.capitalize())
+            info_cols[1].metric("Sex", pet.sex or "—")
+            info_cols[2].metric("Age", pet.age if pet.age is not None else "—")
+            info_cols[3].metric("Status", pet.status)
+            
+            st.write(f"**Breed:** {pet.breed or '—'}")
+            st.write(f"**Weight:** {pet.weight or '—'}  |  **Height:** {pet.height or '—'}")
+            st.write(f"**Color/Markings:** {pet.color_markings or '—'}")
+            st.write(f"**Microchip #:** {pet.microchip_number or '—'}")
+            st.write(f"**Spayed/Neutered:** {pet.spayed_neutered or 'Unknown'}")
+            st.write(f"**Allergies:** {pet.allergies or '—'}")
+            st.write(f"**Blood group:** {pet.blood_type or '—'}")
+            st.write(f"**Behavioral Notes:** {pet.behavioral_notes or '—'}")
+            
+            if hasattr(pet, 'diet_good') and pet.diet_good:
+                st.write("**Allowed Foods:**")
+                for item in pet.diet_good:
+                    st.markdown(f"- {item}")
+            if hasattr(pet, 'diet_bad') and pet.diet_bad:
+                st.write("**Prohibited Foods:**")
+                for item in pet.diet_bad:
+                    st.markdown(f"- :red[{item}]")
+                    
+            st.write(f"**Owner phone:** {owner.phone or '—'}")
+            st.write(f"**Owner email:** {owner.email or '—'}")
+            st.write(f"**Owner address:** {owner.address or '—'}")
+            if pet.chronic_conditions:
+                st.write("**Medical history:**")
+                for entry in pet.chronic_conditions:
+                    st.markdown(f"- {entry}")
+            else:
+                st.write("**Medical history:** —")
+
+all_patients = [(owner, pet) for owner in get_owners() for pet in owner.pets]
+allowed_species = PET_CATEGORIES[selected_group]
+query_lower = search_query.strip().lower()
+
+filtered_group_patients = []
+for owner, pet in all_patients:
+    matches_search = not query_lower or query_lower in pet.name.lower() or query_lower in owner.name.lower()
+    
+    if selected_group == "🐶 General Companion":
+        all_known_species = [s for g in PET_CATEGORIES.values() for s in g]
+        matches_species = pet.species.lower() in allowed_species or pet.species.lower() not in all_known_species
+    else:
+        matches_species = pet.species.lower() in allowed_species
+        
+    if matches_search and matches_species:
+        filtered_group_patients.append((owner, pet))
+
+if not filtered_group_patients:
+    st.info("No patients currently registered under this category.")
+else:
+    if "General Companion" in selected_group:
+        tab_titles = ["🐕 Dogs", "🐈 Cats", "🐾 Others"]
+        tabs = st.tabs(tab_titles)
+        with tabs[0]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() == "dog"])
+        with tabs[1]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() == "cat"])
+        with tabs[2]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() not in ["dog", "cat"]])
+
+    elif "Exotic Small Pet" in selected_group:
+        tab_titles = ["🐿️ Rodents", "🦔 Special Mammals"]
+        tabs = st.tabs(tab_titles)
+        rodents = ["rabbit", "bunny", "hamster", "gerbil", "mouse", "mice", "rat", "chinchilla", "guinea pig"]
+        with tabs[0]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() in rodents])
+        with tabs[1]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() not in rodents])
+
+    elif "Exotic Avian" in selected_group:
+        tab_titles = ["🐤 Small Birds", "🦅 Large Birds & Raptors", "🐓 Poultry"]
+        tabs = st.tabs(tab_titles)
+        small_birds = ["budgie", "canary", "finch", "cockatiel"]
+        poultry = ["chicken", "duck", "goose", "pigeon"]
+        with tabs[0]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() in small_birds])
+        with tabs[1]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() not in small_birds and p.species.lower() not in poultry])
+        with tabs[2]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() in poultry])
+
+    elif "Reptiles & Amphibians" in selected_group:
+        tab_titles = ["🦎 Lizards & Snakes", "🐢 Chelonians", "🐸 Amphibians"]
+        tabs = st.tabs(tab_titles)
+        snakes_lizards = ["bearded dragon", "leopard gecko", "crested gecko", "chameleon", "iguana", "skink", "corn snake", "ball python", "king snake"]
+        chelonians = ["turtle", "tortoise"]
+        with tabs[0]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() in snakes_lizards])
+        with tabs[1]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() in chelonians])
+        with tabs[2]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() not in snakes_lizards and p.species.lower() not in chelonians])
+
+    elif "Fish & Invertebrates" in selected_group:
+        tab_titles = ["💧 Freshwater", "🌊 Saltwater"]
+        tabs = st.tabs(tab_titles)
+        saltwater = ["clownfish", "damselfish", "goby", "blenny"]
+        with tabs[0]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() not in saltwater])
+        with tabs[1]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() in saltwater])
