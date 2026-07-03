@@ -14,10 +14,11 @@ st.title("🧾 Patients")
 st.caption("Register, edit, and search patients (pets and their owners).")
 st.page_link("pages/pets_and_schedule.py", label="View the Pet Profile directory", icon="🐾")
 
+# ==========================================
+# ➕ NEW PATIENT REGISTRATION FORM
+# ==========================================
 st.subheader("New Patient Registration")
 
-# Same collapse pattern as "Edit a Patient" below: a session flag + button
-# rather than st.expander, so a successful save can reliably close it.
 if "show_register_patient" not in st.session_state:
     st.session_state.show_register_patient = False
 
@@ -30,10 +31,6 @@ else:
         st.session_state.show_register_patient = False
         st.rerun()
 
-    # Outside the form so choosing "+ Add new owner" immediately reveals the
-    # "New owner name" field below — same reveal trick used for "Other (custom)"
-    # task titles elsewhere in the app, since widgets inside st.form don't
-    # trigger a rerun until the whole form is submitted.
     owner_choice = st.selectbox(
         "Owner",
         list(range(len(owners))) + [NEW_OWNER_CHOICE],
@@ -116,7 +113,6 @@ else:
             target_owner.email = owner_email.strip() or None
             target_owner.address = owner_address.strip() or None
             
-            # Construct and append the final Pet item with complete traits
             target_owner.add_pet(
                 Pet(
                     name=pet_name.strip(),
@@ -144,11 +140,13 @@ else:
                 )
             )
             save_owners(owners)
-            # Collapse the registration section after a successful save.
             st.session_state.show_register_patient = False
             st.success(f"Registered {pet_name.strip()} under {target_owner.name}.")
             st.rerun()
 
+# ==========================================
+# ✏️ EDIT PATIENT FORM SECTION
+# ==========================================
 st.divider()
 st.subheader("Edit a Patient")
 
@@ -318,28 +316,43 @@ else:
         st.success(f"Deleted {delete_pet.name}.")
         st.rerun()
 
+# ==========================================
+# 📊 CATEGORIZED PATIENTS DIRECTORY (TABS)
+# ==========================================
 st.divider()
-st.subheader("Patients List")
+st.subheader("Patients Directory")
+
+PET_CATEGORIES = {
+    "🐶 General Companion": ["dog", "cat"],
+    "🐹 Exotic Small Pet": ["rabbit", "bunny", "hamster", "gerbil", "mouse", "mice", "rat", "chinchilla", "guinea pig", "ferret", "hedgehog", "sugar glider", "squirrel"],
+    "🦜 Exotic Avian": ["budgie", "canary", "finch", "parrot", "cockatiel", "conure", "chicken", "duck", "goose", "pigeon", "owl", "falcon", "snowy owl"],
+    "🦎 Reptiles & Amphibians": ["bearded dragon", "leopard gecko", "crested gecko", "chameleon", "iguana", "skink", "turtle", "tortoise", "corn snake", "ball python", "king snake", "frog", "toad", "newt", "salamander"],
+    "🐠 Fish & Invertebrates": ["betta", "guppy", "platy", "swordtail", "molly", "tetra", "goldfish", "danio", "minnow", "cichlid", "pleco", "clownfish", "damselfish", "goby", "blenny"]
+}
+
+selected_group = st.radio(
+    "Filter by Species Group",
+    options=list(PET_CATEGORIES.keys()),
+    horizontal=True,
+    key="patient_directory_group"
+)
+
 search_query = st.text_input("Search by pet or owner name")
 
-visible_patients = all_patients
-if search_query.strip():
-    query_lower = search_query.strip().lower()
-    visible_patients = [
-        (owner, pet)
-        for owner, pet in visible_patients
-        if query_lower in pet.name.lower() or query_lower in owner.name.lower()
-    ]
-
-if visible_patients:
-    for index, (owner, pet) in enumerate(visible_patients):
+def render_patient_cards(patient_list):
+    if not patient_list:
+        st.info("No patients matching this sub-category.")
+        return
+        
+    for owner, pet in patient_list:
         status_flag = "" if pet.status == "Alive" else " 🪦"
         with st.expander(f"{pet_species_icon(pet.species)} {pet.name}{status_flag} — owned by {owner.name}"):
             info_cols = st.columns(4)
-            info_cols[0].metric("Species", pet.species)
+            info_cols[0].metric("Species", pet.species.capitalize())
             info_cols[1].metric("Sex", pet.sex or "—")
             info_cols[2].metric("Age", pet.age if pet.age is not None else "—")
             info_cols[3].metric("Status", pet.status)
+            
             st.write(f"**Breed:** {pet.breed or '—'}")
             st.write(f"**Weight:** {pet.weight or '—'}  |  **Height:** {pet.height or '—'}")
             st.write(f"**Color/Markings:** {pet.color_markings or '—'}")
@@ -367,7 +380,77 @@ if visible_patients:
                     st.markdown(f"- {entry}")
             else:
                 st.write("**Medical history:** —")
+
+# Apply both broad-tier dynamic filtering and text search filters queries
+allowed_species = PET_CATEGORIES[selected_group]
+query_lower = search_query.strip().lower()
+
+filtered_group_patients = []
+for owner, pet in all_patients:
+    matches_search = not query_lower or query_lower in pet.name.lower() or query_lower in owner.name.lower()
+    
+    if selected_group == "🐶 General Companion":
+        all_known_species = [s for g in PET_CATEGORIES.values() for s in g]
+        matches_species = pet.species.lower() in allowed_species or pet.species.lower() not in all_known_species
+    else:
+        matches_species = pet.species.lower() in allowed_species
+        
+    if matches_search and matches_species:
+        filtered_group_patients.append((owner, pet))
+
+if not filtered_group_patients:
+    st.info("No patients currently registered under this category.")
 else:
-    st.info("No patients found.")
+    if "General Companion" in selected_group:
+        tab_titles = ["🐕 Dogs", "🐈 Cats", "🐾 Others"]
+        tabs = st.tabs(tab_titles)
+        with tabs[0]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() == "dog"])
+        with tabs[1]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() == "cat"])
+        with tabs[2]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() not in ["dog", "cat"]])
+
+    elif "Exotic Small Pet" in selected_group:
+        tab_titles = ["🐿️ Rodents", "🦔 Special Mammals"]
+        tabs = st.tabs(tab_titles)
+        rodents = ["rabbit", "bunny", "hamster", "gerbil", "mouse", "mice", "rat", "chinchilla", "guinea pig"]
+        with tabs[0]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() in rodents])
+        with tabs[1]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() not in rodents])
+
+    elif "Exotic Avian" in selected_group:
+        tab_titles = ["🐤 Small Birds", "🦅 Large Birds & Raptors", "🐓 Poultry"]
+        tabs = st.tabs(tab_titles)
+        small_birds = ["budgie", "canary", "finch", "cockatiel"]
+        poultry = ["chicken", "duck", "goose", "pigeon"]
+        with tabs[0]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() in small_birds])
+        with tabs[1]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() not in small_birds and p.species.lower() not in poultry])
+        with tabs[2]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() in poultry])
+
+    elif "Reptiles & Amphibians" in selected_group:
+        tab_titles = ["🦎 Lizards & Snakes", "🐢 Chelonians", "🐸 Amphibians"]
+        tabs = st.tabs(tab_titles)
+        snakes_lizards = ["bearded dragon", "leopard gecko", "crested gecko", "chameleon", "ignuana", "iguana", "skink", "corn snake", "ball python", "king snake"]
+        chelonians = ["turtle", "tortoise"]
+        with tabs[0]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() in snakes_lizards])
+        with tabs[1]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() in chelonians])
+        with tabs[2]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() not in snakes_lizards and p.species.lower() not in chelonians])
+
+    elif "Fish & Invertebrates" in selected_group:
+        tab_titles = ["💧 Freshwater", "🌊 Saltwater"]
+        tabs = st.tabs(tab_titles)
+        saltwater = ["clownfish", "damselfish", "goby", "blenny"]
+        with tabs[0]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() not in saltwater])
+        with tabs[1]:
+            render_patient_cards([(o, p) for o, p in filtered_group_patients if p.species.lower() in saltwater])
 
 st.caption("Data is auto-saved to `data.json` after every change, so it persists between app runs.")
