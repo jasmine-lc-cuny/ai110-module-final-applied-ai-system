@@ -1,5 +1,9 @@
 """Shared state and UI helpers used across every page of the multi-page app."""
 
+# ==========================================
+# 📦 IMPORTS & SYSTEM PATHS
+# Defines where the app looks for files and tools
+# ==========================================
 import re
 import uuid
 from datetime import date
@@ -27,6 +31,12 @@ CLINIC_DATA_PATH = Path("clinic.json")
 UPLOADS_PATH = Path("uploads")
 NEW_OWNER_CHOICE = "+ Add new owner"
 
+# ==========================================
+# 🗄️ GLOBAL CONFIGURATION & MENUS
+# Stores all the fixed lists, colors, and dictionary data 
+# used to populate dropdowns across the app
+# ==========================================
+
 # st.badge() color per Appointment.status, matching the mockup's palette.
 APPOINTMENT_STATUS_COLORS = {
     "Pending": "yellow",
@@ -35,8 +45,7 @@ APPOINTMENT_STATUS_COLORS = {
     "Cancelled": "red",
 }
 
-# Categories offered when uploading a Document, mirroring the mockup's
-# document groupings.
+# Categories offered when uploading a Document
 DOCUMENT_CATEGORIES = [
     "Digital radiography",
     "Dental digital x-ray",
@@ -44,9 +53,7 @@ DOCUMENT_CATEGORIES = [
     "Other",
 ]
 
-# Colors for the weekly-schedule timeline, assigned by a pet's index in
-# owner.pets (not a name hash) so the mapping is deterministic and never
-# collides. Chosen for contrast against white pill text.
+# Colors for the weekly-schedule timeline
 PET_TIMELINE_COLORS = [
     "#3B5BDB",  # indigo
     "#099268",  # teal
@@ -58,128 +65,59 @@ PET_TIMELINE_COLORS = [
     "#5C940D",  # lime
 ]
 
-# Common care tasks offered in "Schedule a Task" dropdowns, covering every
-# category task_type_icon() recognizes, plus "Other (custom)" for anything else.
+# Common care tasks offered in "Schedule a Task" dropdowns
 COMMON_TASK_TITLES = [
-    "Morning Walk",
-    "Afternoon Walk",
-    "Evening Walk",
-    "Breakfast",
-    "Lunch",
-    "Dinner",
-    "Give Medication",
-    "Heartworm Prevention",
-    "Vet Appointment",
-    "X-Ray",
-    "Injection Medication",
-    "Injection Vaccine",
-    "Injection Subcutaneous",
-    "Injection Intramuscular",
-    "Injection Intravenous",
-    "Blood Work",
-    "Surgery",
-    "Brush Coat",
-    "Wash / Bath",
-    "Hair Cut",
-    "Trim Nails",
-    "Ear Cleaning",
-    "Teeth Brushing",
-    "Playtime",
+    "Morning Walk", "Afternoon Walk", "Evening Walk", 
+    "Breakfast", "Lunch", "Dinner", 
+    "Give Medication", "Heartworm Prevention", "Vet Appointment", 
+    "X-Ray", "Injection Medication", "Injection Vaccine", 
+    "Injection Subcutaneous", "Injection Intramuscular", "Injection Intravenous", 
+    "Blood Work", "Surgery", "Brush Coat", "Wash / Bath", "Hair Cut", 
+    "Trim Nails", "Ear Cleaning", "Teeth Brushing", "Playtime",
 ]
 
-# Extra "Reason" sub-options offered on the veterinary quick-add form for
-# task titles vets naturally subdivide further, stored on Task.notes. Not
-# every title has one — only these get a second picker after "Task". Each
-# injection route lists what's actually administered that way (including
-# things like chemotherapy) rather than just describing the route itself.
+# Sub-options offered on the veterinary quick-add form (Task.notes)
 VETERINARY_TASK_REASONS = {
     "Give Medication": ["Heartworm Prevention", "Antibiotics"],
     "X-Ray": ["Hip"],
     "Blood Work": [
-        "Complete Blood Count (CBC)",
-        "Serum Chemistry",
-        "Thyroid Panel",
-        "Electrolyte Panel",
-        "Pre-Anesthetic Panel",
-        "Coagulation Profile",
+        "Complete Blood Count (CBC)", "Serum Chemistry", "Thyroid Panel",
+        "Electrolyte Panel", "Pre-Anesthetic Panel", "Coagulation Profile",
     ],
-    "Injection Subcutaneous": [
-        "Routine Vaccines",
-        "Maintenance Medications (e.g. Insulin)",
-        "Fluid Therapy",
-    ],
-    "Injection Intramuscular": [
-        "Pain Management",
-        "Sedatives and Tranquilizers",
-        "Antibiotics",
-    ],
-    "Injection Intravenous": [
-        "General Anesthesia",
-        "Emergency Medications",
-        "Chemotherapy",
-        "Continuous Fluid Therapy",
-    ],
+    "Injection Subcutaneous": ["Routine Vaccines", "Maintenance Medications (e.g. Insulin)", "Fluid Therapy"],
+    "Injection Intramuscular": ["Pain Management", "Sedatives and Tranquilizers", "Antibiotics"],
+    "Injection Intravenous": ["General Anesthesia", "Emergency Medications", "Chemotherapy", "Continuous Fluid Therapy"],
 }
 
-# Some reasons differ by the pet's species (which vaccine, which surgery);
-# falls back to the "dog" list for any species without its own entry.
+# Sub-options that differ by species
 VETERINARY_TASK_REASONS_BY_SPECIES = {
     "Injection Vaccine": {
         "dog": ["Rabies", "Distemper", "Parvovirus", "Adenovirus"],
         "cat": ["Rabies", "Panleukopenia", "Calicivirus", "Herpesvirus"],
     },
     "Surgery": {
-        "dog": [
-            "Neuter",
-            "Dental Extractions",
-            "Mass/Tumor Removals",
-            "Gastrointestinal Surgeries",
-            "Exploratory Laparotomy",
-            "C-Section",
-        ],
-        "cat": [
-            "Spay",
-            "Dental Extractions",
-            "Mass/Tumor Removals",
-            "Gastrointestinal Surgeries",
-            "Exploratory Laparotomy",
-            "C-Section",
-        ],
+        "dog": ["Neuter", "Dental Extractions", "Mass/Tumor Removals", "Gastrointestinal Surgeries", "Exploratory Laparotomy", "C-Section"],
+        "cat": ["Spay", "Dental Extractions", "Mass/Tumor Removals", "Gastrointestinal Surgeries", "Exploratory Laparotomy", "C-Section"],
     },
 }
 
-# "Injection Medication" gets its own two-step picker (Category, then the
-# specific long-/fast-acting injectable) rather than one flat list, since a
-# named brand-name medication makes more sense grouped by what it treats.
 INJECTION_MEDICATION_CATEGORIES = [
     "Pain & Arthritis Management",
     "Flea, Tick, & Allergy Relief",
     "Antibiotics & General Treatment",
 ]
 
-# Pain & arthritis injectables differ by species (Librela/Adequan Canine are
-# dog-specific, Solensia is cat-specific); falls back to "dog" for any
-# species without its own entry, same convention as VETERINARY_TASK_REASONS_BY_SPECIES.
 INJECTION_MEDICATION_PAIN_OPTIONS_BY_SPECIES = {
-    "dog": [
-        "Librela (bedinvetmab)",
-        "Adequan Canine (polysulfated glycosaminoglycan)",
-    ],
+    "dog": ["Librela (bedinvetmab)", "Adequan Canine (polysulfated glycosaminoglycan)"],
     "cat": ["Solensia (frunevetmab)"],
 }
 
-# These two categories aren't species-split in practice, so they stay flat.
 INJECTION_MEDICATION_OPTIONS = {
     "Flea, Tick, & Allergy Relief": ["Bravecto Quantum", "Cytopoint"],
-    "Antibiotics & General Treatment": [
-        "Convenia (cefovecin sodium)",
-        "Injectable Insulin (Vetsulin or ProZinc)",
-    ],
+    "Antibiotics & General Treatment": ["Convenia (cefovecin sodium)", "Injectable Insulin (Vetsulin or ProZinc)"],
 }
 
-# The Dog Cafes fixed menu: (section, tagline, [(item, price, description)]).
-# Drives both the menu display tabs on the Dog Cafes page and the RSVP
-# form's two-step Menu -> Item picker (picked item lands in Task.notes).
+# The Dog Cafes menu
 A_LA_BARK_MENU = [
     (
         "🍔 Pooch Pub Grub",
@@ -237,10 +175,6 @@ A_LA_BARK_MENU = [
     ),
 ]
 
-# Common clinic services offered in the "Service" dropdown on the Services
-# page, each with a typical default cost that pre-fills (but doesn't lock)
-# the Cost field — same "pick a common one, or Other (custom)" pattern as
-# COMMON_TASK_TITLES.
 COMMON_SERVICES = [
     ("Blood Work", 45.0),
     ("X-Ray", 100.0),
@@ -251,13 +185,6 @@ COMMON_SERVICES = [
     ("Spay/Neuter", 250.0),
 ]
 
-# Which task_type_icon() emoji belong to each "Book a Service" category.
-# Feeding (🍖) and anything task_type_icon() can't categorize (🐾) don't have
-# an obvious home among the other categories, so they land under the
-# "special_services" key (presented as "Dog Cafes"). Sitting and Training
-# have no matching task types yet — their pages are placeholders until tasks
-# like "Boarding" or "Training Session" get added to COMMON_TASK_TITLES and
-# TASK_TYPE_ICONS.
 SERVICE_CATEGORY_ICONS = {
     "grooming": {"👂", "🦷", "💅", "✂️", "🧼", "🪮"},
     "walking": {"🐕"},
@@ -265,31 +192,24 @@ SERVICE_CATEGORY_ICONS = {
     "special_services": {"🍖", "🐾"},
 }
 
-# Title-dropdown options offered on each category's "quick add" form —
-# a subset of COMMON_TASK_TITLES relevant to that specific category.
 CATEGORY_TASK_TITLES = {
     "grooming": ["Brush Coat", "Wash / Bath", "Hair Cut", "Trim Nails", "Ear Cleaning", "Teeth Brushing"],
     "walking": ["Morning Walk", "Afternoon Walk", "Evening Walk", "Playtime"],
     "veterinary": [
-        "Give Medication",
-        "Heartworm Prevention",
-        "Vet Appointment",
-        "X-Ray",
-        "Injection Medication",
-        "Injection Vaccine",
-        "Injection Subcutaneous",
-        "Injection Intramuscular",
-        "Injection Intravenous",
-        "Blood Work",
-        "Surgery",
+        "Give Medication", "Heartworm Prevention", "Vet Appointment", "X-Ray",
+        "Injection Medication", "Injection Vaccine", "Injection Subcutaneous",
+        "Injection Intramuscular", "Injection Intravenous", "Blood Work", "Surgery",
     ],
     "special_services": ["Breakfast", "Lunch", "Dinner"],
 }
 
+# ==========================================
+# 💾 STATE MANAGEMENT & DATA PERSISTENCE
+# Functions that read from and write to data.json and clinic.json
+# ==========================================
 
 def get_owners() -> list[Owner]:
-    """Return every owner in this session (e.g. different customers, each
-    with their own pets/tasks), loading them from data.json once if needed."""
+    """Return every owner in this session, loading them from data.json once if needed."""
     if "owners" not in st.session_state:
         if DATA_PATH.exists():
             st.session_state.owners = load_owners_from_json(str(DATA_PATH))
@@ -297,41 +217,27 @@ def get_owners() -> list[Owner]:
             st.session_state.owners = [Owner("Jordan")]
     return st.session_state.owners
 
-
 def get_combined_owner() -> Owner:
-    """Return a synthetic Owner holding every pet across every owner, so the
-    schedule/calendar pages show the whole clinic instead of one customer.
-
-    The Pet objects are the same live instances the real owners hold — only
-    the wrapping Owner is synthetic — so reads see current data. Never save
-    this object's structure anywhere; save_owner()/save_owners() persist the
-    real owners list.
-    """
+    """Return a synthetic Owner holding every pet across every owner for the clinic-wide views."""
     return Owner(
         "All Owners",
         pets=[pet for owner in get_owners() for pet in owner.pets],
     )
 
-
 def get_scheduler() -> Scheduler:
     """Return a Scheduler across every owner's pets."""
     return Scheduler(get_combined_owner())
-
 
 def save_owners(owners: list[Owner]) -> None:
     """Persist every owner (and their pets/tasks) to data.json."""
     save_owners_to_json(owners, str(DATA_PATH))
 
-
 def save_owner(owner: Owner) -> None:
-    """Persist all owners to data.json — call after any mutation, on every page."""
+    """Persist all owners to data.json."""
     save_owners(get_owners())
 
-
 def get_clinic() -> Clinic:
-    """Return this session's Clinic (departments/doctors/services/appointments),
-    loading it from clinic.json once if needed. Shared across every
-    "Veterinarian" page, independent of the owners list in data.json."""
+    """Return this session's Clinic, loading it from clinic.json once if needed."""
     if "clinic" not in st.session_state:
         if CLINIC_DATA_PATH.exists():
             st.session_state.clinic = Clinic.load_from_json(str(CLINIC_DATA_PATH))
@@ -339,74 +245,55 @@ def get_clinic() -> Clinic:
             st.session_state.clinic = Clinic()
     return st.session_state.clinic
 
-
 def save_clinic(clinic: Clinic) -> None:
-    """Persist the clinic's records to clinic.json — call after any mutation."""
+    """Persist the clinic's records to clinic.json."""
     clinic.save_to_json(str(CLINIC_DATA_PATH))
 
+# ==========================================
+# 📎 FILE UPLOAD UTILITIES
+# Logic to safely store and retrieve uploaded X-rays/records
+# ==========================================
 
 def slugify_for_path(name: str) -> str:
     """Turn an owner/pet name into a filesystem-safe folder name segment."""
     slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
     return slug or "unnamed"
 
-
 def save_uploaded_document(owner: Owner, pet: Pet, category: str, uploaded_file) -> Document:
     """Save an st.file_uploader() file to disk and return a Document referencing it."""
     pet_dir = UPLOADS_PATH / f"{slugify_for_path(owner.name)}__{slugify_for_path(pet.name)}"
     pet_dir.mkdir(parents=True, exist_ok=True)
-
-    # Prefix with a short unique token so repeat uploads of the same
-    # filename (e.g. two different "xray.png") never overwrite each other
-    # on disk, while Document.filename keeps the original name for display.
     stored_name = f"{uuid.uuid4().hex[:8]}_{uploaded_file.name}"
     stored_path = pet_dir / stored_name
     with open(stored_path, "wb") as file:
         file.write(uploaded_file.getbuffer())
-
     return Document(category=category, filename=uploaded_file.name, path=str(stored_path))
-
 
 def delete_uploaded_document(document: Document) -> None:
     """Remove an uploaded document's file from disk, if it still exists."""
     Path(document.path).unlink(missing_ok=True)
 
+# ==========================================
+# 🏷️ UI FORMATTERS & DATA PARSERS
+# Functions to make labels, rows, and tables look clean in the app
+# ==========================================
 
 def pet_label(pet: Pet, owners: list[Owner]) -> str:
-    """Return "🐈 Garfield (Jasmine)" — a pet's display label including its
-    owner, looked up by object identity in the passed owners list.
-
-    Owner names matter in dropdown labels for correctness, not just clarity:
-    Streamlit identifies a selectbox's chosen option by its *formatted label
-    string*, so two options that format identically can register as each
-    other when clicked.
-
-    Takes owners as a parameter (rather than calling get_owners()) so labels
-    can be precomputed into plain lists during the script run — a selectbox
-    format_func can get re-invoked outside any run context, where
-    st.session_state isn't available.
-    """
+    """Return '🐈 Garfield (Jasmine)' formatting for dropdown lists."""
     for owner in owners:
         if any(existing is pet for existing in owner.pets):
             return f"{pet_species_icon(pet.species)} {pet.name} ({owner.name})"
     return f"{pet_species_icon(pet.species)} {pet.name}"
 
-
 def task_pair_label(index: int, pet: Pet, task: Task, owners: list[Owner]) -> str:
-    """Return a unique dropdown label for a (pet, task) pair.
-
-    The "N." prefix guarantees no two options in one dropdown ever share a
-    label (see pet_label's docstring for why identical labels are unsafe),
-    even for two same-titled tasks on the same pet at the same time.
-    """
+    """Return a unique dropdown label for a specific task to prevent duplication errors."""
     return (
         f"{index + 1}. {pet_label(pet, owners)} | {task_type_icon(task.title)} {task.title} "
         f"@ {format_time_12h(task.time)}"
     )
 
-
 def task_rows(task_pairs):
-    """Convert scheduler task pairs into table-friendly dictionaries."""
+    """Convert raw scheduler task data into Streamlit table-friendly dictionaries."""
     return [
         {
             "Type": task_type_icon(task.title),
@@ -424,9 +311,8 @@ def task_rows(task_pairs):
         for pet, task in task_pairs
     ]
 
-
 def tasks_in_category(owner: Owner, category: str):
-    """Return every (pet, task) pair whose task_type_icon() belongs to a service category."""
+    """Filter tasks down to a specific service category (e.g. Grooming tasks only)."""
     icons = SERVICE_CATEGORY_ICONS.get(category, set())
     return [
         (pet, task)
@@ -434,91 +320,55 @@ def tasks_in_category(owner: Owner, category: str):
         if task_type_icon(task.title) in icons
     ]
 
+# ==========================================
+# 🎛️ CUSTOM SUB-MENU PICKERS
+# The cascading selection logic for Vet conditions and Dog Cafe menus
+# ==========================================
 
 def render_veterinary_reason_picker(title: str, species: str, key_prefix: str = "vet") -> str | None:
-    """Show an extra "Reason" sub-picker for veterinary task titles vets
-    naturally subdivide further (which vaccine, which blood panel, etc).
-    Returns the picked reason (stored on Task.notes/Appointment.reason), or
-    None if this task title has no defined sub-reasons.
-
-    Called with `title`/`species` read from widgets that live outside the
-    surrounding st.form, so this picker's own widgets must too — otherwise
-    it wouldn't react until the whole form is submitted.
-
-    `key_prefix` must be unique per call site — this renders both on the
-    veterinary quick-add section and inside the Book Appointment dialog on
-    the same page, so identical keys in both places would crash with
-    DuplicateWidgetID if the dialog happens to be open at the same time.
-    """
+    """Show an extra 'Reason' sub-picker dynamically based on the chosen Vet Task."""
     species_key = species.lower()
 
     if title == "Injection Medication":
-        category = st.selectbox(
-            "Medication Category",
-            INJECTION_MEDICATION_CATEGORIES,
-            key=f"{key_prefix}_med_category",
-        )
+        category = st.selectbox("Medication Category", INJECTION_MEDICATION_CATEGORIES, key=f"{key_prefix}_med_category")
         if category == "Pain & Arthritis Management":
-            medication_options = INJECTION_MEDICATION_PAIN_OPTIONS_BY_SPECIES.get(
-                species_key, INJECTION_MEDICATION_PAIN_OPTIONS_BY_SPECIES["dog"]
-            )
+            medication_options = INJECTION_MEDICATION_PAIN_OPTIONS_BY_SPECIES.get(species_key, INJECTION_MEDICATION_PAIN_OPTIONS_BY_SPECIES["dog"])
         else:
             medication_options = INJECTION_MEDICATION_OPTIONS[category]
-        return st.selectbox(
-            "Medication", medication_options, key=f"{key_prefix}_med_select_{category}"
-        )
+        return st.selectbox("Medication", medication_options, key=f"{key_prefix}_med_select_{category}")
 
     if title in VETERINARY_TASK_REASONS_BY_SPECIES:
-        species_options = VETERINARY_TASK_REASONS_BY_SPECIES[title].get(
-            species_key, VETERINARY_TASK_REASONS_BY_SPECIES[title]["dog"]
-        )
-        return st.selectbox(
-            "Reason", species_options, key=f"{key_prefix}_reason_select_{title}"
-        )
+        species_options = VETERINARY_TASK_REASONS_BY_SPECIES[title].get(species_key, VETERINARY_TASK_REASONS_BY_SPECIES[title]["dog"])
+        return st.selectbox("Reason", species_options, key=f"{key_prefix}_reason_select_{title}")
 
     if title in VETERINARY_TASK_REASONS:
-        return st.selectbox(
-            "Reason", VETERINARY_TASK_REASONS[title], key=f"{key_prefix}_reason_select_{title}"
-        )
+        return st.selectbox("Reason", VETERINARY_TASK_REASONS[title], key=f"{key_prefix}_reason_select_{title}")
 
     return None
 
-
 def _render_dog_cafe_menu_picker() -> str:
-    """Show the Dog Cafes two-step Menu section -> Item picker and return the
-    picked item as "Name (price)" for Task.notes. Lives outside the st.form
-    for the same reason as the veterinary Reason picker: the item list must
-    react immediately to the chosen menu section."""
+    """Show the Dog Cafes two-step Menu section -> Item picker for RSVP selection."""
     section_index = st.selectbox(
-        "Menu",
-        range(len(A_LA_BARK_MENU)),
-        format_func=lambda i: A_LA_BARK_MENU[i][0],
-        key="dog_cafe_menu_section",
+        "Menu", range(len(A_LA_BARK_MENU)), format_func=lambda i: A_LA_BARK_MENU[i][0], key="dog_cafe_menu_section"
     )
     section_name, tagline, items = A_LA_BARK_MENU[section_index]
     item_labels = [f"{name} ({price})" for name, price, _ in items]
     item_index = st.selectbox(
-        "Menu Item",
-        range(len(items)),
-        format_func=lambda i: item_labels[i],
-        # Keyed per section: the options list changes with the section, and
-        # reusing one key across different option lists leaves stale state.
-        key=f"dog_cafe_menu_item_{section_index}",
+        "Menu Item", range(len(items)), format_func=lambda i: item_labels[i], key=f"dog_cafe_menu_item_{section_index}"
     )
     st.caption(items[item_index][2])
     return item_labels[item_index]
 
+
+# ==========================================
+# 🏗️ MAIN CATEGORY PAGE BUILDER (THE ENGINE)
+# The master function that renders Grooming, Walking, Dog Cafes, and Vet Tasks
+# ==========================================
 def render_category_page(
     category: str, display_name: str, icon: str, page_title: str | None = None
 ) -> None:
-    """Render a full "Book a Service" category page: quick-add form, filtered
+    """Render a full 'Book a Service' category page: quick-add form, filtered
     schedule, and a complete-task action, all scoped to this category.
-
-    display_name is woven into phrases ("Schedule a {display_name} Task"),
-    so pass page_title when the heading differs from the task kind — e.g.
-    heading "🍖 Dog Cafes" with phrasing "Schedule a Dog Cafe Task".
-    Completing/deleting/reopening any task still lives on "Today's Schedule"
-    rather than being duplicated on every category page.
     """
     owner = get_combined_owner()
     scheduler = get_scheduler()
@@ -559,7 +409,6 @@ def render_category_page(
         else:
             raw_species_list = PET_CATEGORIES[selected_group]
             
-            # Format the options cleanly with their icons (e.g., "🐕 Dog")
             species_options = ["All"] + [f"{pet_species_icon(s)} {s.capitalize()}" for s in raw_species_list]
             
             selected_species_label = st.radio(
@@ -572,7 +421,6 @@ def render_category_page(
             if selected_species_label == "All":
                 allowed_species = raw_species_list
             else:
-                # Extract the pure string back out (e.g., pulling "dog" from "🐕 Dog")
                 target = selected_species_label.split(" ", 1)[-1].lower()
                 allowed_species = [target]
 
@@ -630,7 +478,6 @@ def render_category_page(
                     st.rerun()
 
             with col2:
-                # Map the selected filtered index back to the real index in owner.pets
                 selected_filtered_index = st.selectbox(
                     "Pet",
                     range(len(filtered_pets)),
@@ -640,84 +487,69 @@ def render_category_page(
                 selected_pet_index = filtered_pets[selected_filtered_index][0]
 
             # --- ROW 2: Task then Reason ---
-            # (The rest of your code starting with col3, col4 = st.columns(2) remains exactly the same!)
+            col3, col4 = st.columns(2)
+            
+            with col3:
+                title = st.selectbox("Task", title_options, key=f"{category}_title_select")
+            
+            with col4:
+                reason = None
+                if category == "veterinary":
+                    selected_species = selected_owner.pets[selected_pet_index].species
+                    reason = render_veterinary_reason_picker(title, selected_species, key_prefix=category)
+                elif category == "special_services":
+                    reason = _render_dog_cafe_menu_picker()
+                else:
+                    st.text_input("Reason", value="—", disabled=True, key=f"{category}_disabled_reason")
 
-            with col2:
-                selected_owner_index = st.selectbox(
-                    "Owner",
-                    range(len(owners_with_pets)),
-                    format_func=lambda i: owner_labels[i],
-                    key=f"{category}_owner_select",
-                )
-                if selected_owner_index != st.session_state[f"{category}_owner_index_state"]:
-                    st.session_state[f"{category}_owner_index_state"] = selected_owner_index
-                    st.rerun()
+            # --- SCHEDULING FORM LAYER ---
+            with st.form(f"add_{category}_task_form", clear_on_submit=True):
+                st.write("Time")
+                hour_col, minute_col, period_col = st.columns(3)
+                with hour_col:
+                    hour_12 = st.selectbox(
+                        "Hour", list(range(1, 13)), index=7, label_visibility="collapsed"
+                    )
+                with minute_col:
+                    minute = st.selectbox(
+                        "Minute", ["00", "15", "30", "45"], label_visibility="collapsed"
+                    )
+                with period_col:
+                    period = st.selectbox("AM/PM", ["AM", "PM"], label_visibility="collapsed")
 
-        # --- ROW 2: Task then Reason ---
-        col3, col4 = st.columns(2)
-        
-        with col3:
-            title = st.selectbox("Task", title_options, key=f"{category}_title_select")
-        
-        with col4:
-            reason = None
-            if category == "veterinary":
-                selected_species = selected_owner.pets[selected_pet_index].species
-                reason = render_veterinary_reason_picker(title, selected_species, key_prefix=category)
-            elif category == "special_services":
-                reason = _render_dog_cafe_menu_picker()
-            else:
-                # Visual alignment guard for categories without a sub-reason (Walking, Grooming, etc.)
-                st.text_input("Reason", value="—", disabled=True, key=f"{category}_disabled_reason")
+                if category == "special_services":
+                    # An RSVP doesn't need explicit scheduling configurations
+                    duration, priority, frequency = 60, "medium", "once"
+                    submitted = st.form_submit_button("Dog Cafe RSVP")
+                else:
+                    duration = st.number_input(
+                        "Duration (minutes)", min_value=1, max_value=240, value=20
+                    )
+                    priority = st.selectbox("Priority", ["high", "medium", "low"])
+                    frequency = st.selectbox("Frequency", ["once", "daily", "weekly"])
+                    submitted = st.form_submit_button(f"Add {display_name} task")
 
-        # --- SCHEDULING FORM LAYER ---
-        with st.form(f"add_{category}_task_form", clear_on_submit=True):
-            st.write("Time")
-            hour_col, minute_col, period_col = st.columns(3)
-            with hour_col:
-                hour_12 = st.selectbox(
-                    "Hour", list(range(1, 13)), index=7, label_visibility="collapsed"
+            if submitted:
+                hour_24 = hour_12 % 12
+                if period == "PM":
+                    hour_24 += 12
+                selected_pet = selected_owner.pets[selected_pet_index]
+                selected_pet.add_task(
+                    Task(
+                        title=title,
+                        time=f"{hour_24:02d}:{minute}",
+                        duration_minutes=int(duration),
+                        priority=priority,
+                        frequency=frequency,
+                        notes=reason,
+                    )
                 )
-            with minute_col:
-                minute = st.selectbox(
-                    "Minute", ["00", "15", "30", "45"], label_visibility="collapsed"
-                )
-            with period_col:
-                period = st.selectbox("AM/PM", ["AM", "PM"], label_visibility="collapsed")
-
-            if category == "special_services":
-                # An RSVP doesn't need explicit scheduling configurations
-                duration, priority, frequency = 60, "medium", "once"
-                submitted = st.form_submit_button("Dog Cafe RSVP")
-            else:
-                duration = st.number_input(
-                    "Duration (minutes)", min_value=1, max_value=240, value=20
-                )
-                priority = st.selectbox("Priority", ["high", "medium", "low"])
-                frequency = st.selectbox("Frequency", ["once", "daily", "weekly"])
-                submitted = st.form_submit_button(f"Add {display_name} task")
-
-        if submitted:
-            hour_24 = hour_12 % 12
-            if period == "PM":
-                hour_24 += 12
-            selected_pet = selected_owner.pets[selected_pet_index]
-            selected_pet.add_task(
-                Task(
-                    title=title,
-                    time=f"{hour_24:02d}:{minute}",
-                    duration_minutes=int(duration),
-                    priority=priority,
-                    frequency=frequency,
-                    notes=reason,
-                )
-            )
-            save_owner(owner)
-            success_message = f"Added {title} for {selected_pet.name}."
-            if reason:
-                success_message = f"Added {title} ({reason}) for {selected_pet.name}."
-            st.success(success_message)
-            st.rerun()
+                save_owner(owner)
+                success_message = f"Added {title} for {selected_pet.name}."
+                if reason:
+                    success_message = f"Added {title} ({reason}) for {selected_pet.name}."
+                st.success(success_message)
+                st.rerun()
 
     st.divider()
     st.subheader(f"{display_name} Schedule")
@@ -749,9 +581,6 @@ def render_category_page(
             st.success(f"Completed {complete_task.title}.")
             st.rerun()
 
-    # Deliberately no unconditional save here: every mutation above saves
-    # inline before its st.rerun(). A render-time save would let a stale
-    # browser session silently overwrite data.json just by sitting open.
     st.caption('Completing, deleting, and reopening tasks lives on "Today\'s Schedule".')
 
 def render_placeholder_page(display_name: str, icon: str) -> None:
