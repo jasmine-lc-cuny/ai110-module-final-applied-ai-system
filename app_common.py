@@ -1,14 +1,29 @@
 """Shared state and UI helpers used across every page of the multi-page app."""
 
-import html
 import re
 import uuid
-from datetime import date, datetime
 from pathlib import Path
 
-import streamlit.components.v1 as components
 import streamlit as st
 
+from constants import (
+    A_LA_BARK_MENU,
+    CATEGORY_TASK_TITLES,
+    CATEGORY_TO_SECTION,
+    COMMON_SERVICES,
+    COMMON_TASK_TITLES,
+    DOCUMENT_CATEGORIES,
+    INJECTION_MEDICATION_CATEGORIES,
+    INJECTION_MEDICATION_OPTIONS,
+    INJECTION_MEDICATION_PAIN_OPTIONS_BY_SPECIES,
+    NEW_OWNER_CHOICE,
+    PAGE_BANNERS,
+    PET_TIMELINE_COLORS,
+    SERVICE_CATEGORY_ICONS,
+    SERVICE_SECTIONS,
+    VETERINARY_TASK_REASONS,
+    VETERINARY_TASK_REASONS_BY_SPECIES,
+)
 from pawpal_system import (
     Clinic,
     Document,
@@ -20,443 +35,19 @@ from pawpal_system import (
     load_owners_from_json,
     pet_species_icon,
     priority_icon,
-    save_owners_to_json,
     task_type_icon,
 )
-
-DATA_PATH = Path("data.json")
-CLINIC_DATA_PATH = Path("clinic.json")
-UPLOADS_PATH = Path("uploads")
-BANNER_DIR = Path("assets") / "banners"
-NEW_OWNER_CHOICE = "+ Add new owner"
-
-PAGE_BANNERS = {
-    "home": Path("assets") / "homepage.png",
-    "grooming": BANNER_DIR / "grooming.png",
-    "sitting": BANNER_DIR / "sitting.png",
-    "training": BANNER_DIR / "training.png",
-    "walking": BANNER_DIR / "walking.png",
-    "special_services": BANNER_DIR / "dog_cafe.png",
-}
-
-APPOINTMENT_STATUS_COLORS = {
-    "Pending": "yellow",
-    "Confirmed": "blue",
-    "Completed": "green",
-    "Cancelled": "red",
-}
-
-DOCUMENT_CATEGORIES = [
-    "Digital radiography",
-    "Dental digital x-ray",
-    "In-house laboratory diagnostics",
-    "Other",
-]
-
-PET_TIMELINE_COLORS = [
-    "#3B5BDB",
-    "#099268",
-    "#E8590C",
-    "#C2255C",
-    "#6741D9",
-    "#0C8599",
-    "#E03131",
-    "#5C940D",
-]
-
-COMMON_TASK_TITLES = [
-    "Morning Walk",
-    "Afternoon Walk",
-    "Evening Walk",
-    "Breakfast",
-    "Lunch",
-    "Dinner",
-    "Give Medication",
-    "Heartworm Prevention",
-    "Vet Appointment",
-    "X-Ray",
-    "Injection Medication",
-    "Injection Vaccine",
-    "Injection Subcutaneous",
-    "Injection Intramuscular",
-    "Injection Intravenous",
-    "Blood Work",
-    "Surgery",
-    "Brush Coat",
-    "Wash / Bath",
-    "Hair Cut",
-    "Trim Nails",
-    "Ear Cleaning",
-    "Teeth Brushing",
-    "Playtime",
-]
-
-VETERINARY_TASK_REASONS = {
-    "Give Medication": ["Heartworm Prevention", "Antibiotics"],
-    "X-Ray": ["Hip"],
-    "Blood Work": [
-        "Complete Blood Count (CBC)",
-        "Serum Chemistry",
-        "Thyroid Panel",
-        "Electrolyte Panel",
-        "Pre-Anesthetic Panel",
-        "Coagulation Profile",
-    ],
-    "Injection Subcutaneous": [
-        "Routine Vaccines",
-        "Maintenance Medications (e.g. Insulin)",
-        "Fluid Therapy",
-    ],
-    "Injection Intramuscular": [
-        "Pain Management",
-        "Sedatives and Tranquilizers",
-        "Antibiotics",
-    ],
-    "Injection Intravenous": [
-        "General Anesthesia",
-        "Emergency Medications",
-        "Chemotherapy",
-        "Continuous Fluid Therapy",
-    ],
-}
-
-VETERINARY_TASK_REASONS_BY_SPECIES = {
-    "Injection Vaccine": {
-        "dog": ["Rabies", "Distemper", "Parvovirus", "Adenovirus"],
-        "cat": ["Rabies", "Panleukopenia", "Calicivirus", "Herpesvirus"],
-    },
-    "Surgery": {
-        "dog": [
-            "Neuter",
-            "Dental Extractions",
-            "Mass/Tumor Removals",
-            "Gastrointestinal Surgeries",
-            "Exploratory Laparotomy",
-            "C-Section",
-        ],
-        "cat": [
-            "Spay",
-            "Dental Extractions",
-            "Mass/Tumor Removals",
-            "Gastrointestinal Surgeries",
-            "Exploratory Laparotomy",
-            "C-Section",
-        ],
-    },
-}
-
-INJECTION_MEDICATION_CATEGORIES = [
-    "Pain & Arthritis Management",
-    "Flea, Tick, & Allergy Relief",
-    "Antibiotics & General Treatment",
-]
-
-INJECTION_MEDICATION_PAIN_OPTIONS_BY_SPECIES = {
-    "dog": ["Librela (bedinvetmab)", "Adequan Canine (polysulfated glycosaminoglycan)"],
-    "cat": ["Solensia (frunevetmab)"],
-}
-
-INJECTION_MEDICATION_OPTIONS = {
-    "Flea, Tick, & Allergy Relief": ["Bravecto Quantum", "Cytopoint"],
-    "Antibiotics & General Treatment": ["Convenia (cefovecin sodium)", "Injectable Insulin (Vetsulin or ProZinc)"],
-}
-
-A_LA_BARK_MENU = [
-    (
-        "🍔 Pooch Pub Grub",
-        "Hearty, warm, and savory meals for the hungriest pups.",
-        [
-            ("Mini Paw Burger & Sliders", "$6.50", "Small beef patties served with a side of steamed veggies."),
-            ("The Bark-B-Q Platter", "$8.50", "Slow-cooked, shredded chicken or beef with a drizzle of dog-safe bone broth."),
-            ("Shepherd’s Pie for Paws", "$7.25", "Lean ground meat topped with a layer of mashed sweet potato and peas."),
-            ("Barkingly Good Beef Supper", "$5.00", "A warm meal of ground beef, brown rice, and vegetables."),
-            ("Waggingly Delicious Chicken Dinner", "$5.00", "Slow-cooked chicken in doggy gravy with crushed potatoes and vegetables."),
-            ("Doggy Bowl", "$7.00", "A full meal featuring turkey, brown rice, corn, peas, green beans, and carrots."),
-        ],
-    ),
-    (
-        "🧁 Poodings & Paws-tisserie",
-        "Sweet, decadent treats and baked goods to finish off the perfect outing.",
-        [
-            ("Pup-Cake Delight", "$3.75", "A single-serve cupcake topped with sugar-free yogurt icing and a biscuit crumble."),
-            ("Pupcake", "$3.20", "A classic baked treat."),
-            ("Doggy Doughnut", "$3.20", "A sweet ring-shaped baked good."),
-            ("Doggy Éclair", "$3.84", "A specialty pastry-style treat."),
-            ("Iced Bone", "$3.20", "A crunchy, frosted biscuit bone."),
-        ],
-    ),
-    (
-        "🍦 Frosty Furs & Chillers",
-        "Refreshing, icy, and creamy delights for hot days.",
-        [
-            ("Bark-A-Licious Gelato", "$4.50", "A generous scoop of peanut butter or banana-flavored doggy ice cream."),
-            ("Frosty Paws Ice Cream Cup", "$4.99", "A cool, wholesome treat containing essential vitamins, minerals, and protein."),
-            ("Whipped Cream \"Pup-Tini\"", "$2.50", "A small, fluffy cup of fresh whipped cream served with a crunchy bone-shaped cookie."),
-            ("Doggie Frap", "$1.89", "A small bowl of homemade whipped cream."),
-            ("Puppuccino", "$2.56", "A bowl of freshly chilled goat’s milk."),
-        ],
-    ),
-    (
-        "🦴 Snack-Attack Nibbles",
-        "Small, quick bites perfect for training or snacking.",
-        [
-            ("Lil' Nibbles", "$0.63–$3.19", "Smaller snacks including chicken breast, sausages, biscuits, or a Yorkie puddin'."),
-            ("Veggie Snacks", "$3.00", "A healthy mix of apples, carrots, and cucumbers."),
-            ("Scooby Snacks", "$4.00", "A treat made with pumpkin, peanut butter, milk, and oats."),
-            ("Bon A-Pet Treat", "$2.00", "Homemade peanut butter bone-shaped biscuits."),
-        ],
-    ),
-    (
-        "🍺 The Wet Bar (For Canines)",
-        "Non-alcoholic, dog-safe beverages.",
-        [
-            ("Dog Beer", "$3.84", "A refreshing, non-alcoholic brew."),
-            ("Bottom Sniffer Beer", "$4.93", "A specialized doggy beer."),
-            ("Pawsacco", "$3.84", "A specialized herbal blend."),
-            ("Doggy Afternoon Tea", "$8.96", "Specialized blends for oral health or skin and coat support."),
-        ],
-    ),
-]
-
-SERVICE_SECTIONS = [
-    ("🛁", "Grooming"),
-    ("🏠", "Sitting"),
-    ("🎓", "Training"),
-    ("🐕", "Walking"),
-    ("🍖", "Dog Cafes"),
-]
-
-COMMON_SERVICES = [
-    ("Blood Work", 45.0),
-    ("X-Ray", 100.0),
-    ("Checkup", 75.0),
-    ("Vaccination", 65.0),
-    ("Dental Cleaning", 180.0),
-    ("Spay/Neuter", 250.0),
-]
-
-SERVICE_CATEGORY_ICONS = {
-    "grooming": {"👂", "🦷", "💅", "✂️", "🧼", "🪮"},
-    "walking": {"🐕"},
-    "sitting": {"🏠"},
-    "training": {"🎓"},
-    "veterinary": {"💊", "🏥"},
-    "special_services": {"🍖", "🐾"},
-}
-
-CATEGORY_TASK_TITLES = {
-    "grooming": ["Brush Coat", "Wash / Bath", "Hair Cut", "Trim Nails", "Ear Cleaning", "Teeth Brushing"],
-    "walking": ["Morning Walk", "Afternoon Walk", "Evening Walk", "Playtime"],
-    "sitting": ["Day Sitting", "Overnight Sitting", "Drop-In Visit", "House Sitting"],
-    "training": ["Obedience Training", "Puppy Class", "Leash Training", "Trick Training"],
-    "veterinary": [
-        "Give Medication",
-        "Heartworm Prevention",
-        "Vet Appointment",
-        "X-Ray",
-        "Injection Medication",
-        "Injection Vaccine",
-        "Injection Subcutaneous",
-        "Injection Intramuscular",
-        "Injection Intravenous",
-        "Blood Work",
-        "Surgery",
-    ],
-    "special_services": ["Breakfast", "Lunch", "Dinner"],
-}
-
-CATEGORY_TO_SECTION = {
-    "grooming": "Grooming",
-    "sitting": "Sitting",
-    "training": "Training",
-    "walking": "Walking",
-    "special_services": "Dog Cafes",
-}
-
-# ==========================================
-# 💾 STATE MANAGEMENT & DATA PERSISTENCE
-# ==========================================
-
-def _load_owners_from_disk() -> list[Owner]:
-    if not DATA_PATH.exists():
-        return []
-    try:
-        return load_owners_from_json(str(DATA_PATH))
-    except Exception:
-        return []
-
-
-def _load_clinic_from_disk() -> Clinic | None:
-    if not CLINIC_DATA_PATH.exists():
-        return None
-    try:
-        return Clinic.load_from_json(str(CLINIC_DATA_PATH))
-    except Exception:
-        return None
-
-
-def _owners_have_tasks(owners: list[Owner]) -> bool:
-    return any(pet.tasks for owner in owners for pet in owner.pets)
-
-def ensure_demo_data() -> None:
-    """Seed the demo roster and schedule if the local data files are missing."""
-    disk_owners = _load_owners_from_disk()
-    disk_clinic = _load_clinic_from_disk()
-
-    owners_missing_or_empty = not disk_owners
-    tasks_missing = bool(disk_owners) and not _owners_have_tasks(disk_owners)
-    clinic_missing = disk_clinic is None
-    doctors_missing = clinic_missing or not disk_clinic.doctors
-    staff_missing = clinic_missing or not disk_clinic.staff
-
-    if (
-        not owners_missing_or_empty
-        and not tasks_missing
-        and not clinic_missing
-        and not doctors_missing
-        and not staff_missing
-    ):
-        return
-
-    if owners_missing_or_empty:
-        from seed.seed_animals_list import seed_animals_list
-
-        seed_animals_list()
-
-    if staff_missing:
-        from seed.seed_staff import seed_staff
-
-        seed_staff()
-
-    if doctors_missing:
-        from seed.seed_doctors import seed_doctors
-
-        seed_doctors()
-
-    if owners_missing_or_empty or tasks_missing:
-        from seed.seed_schedules import seed_schedules
-
-        seed_schedules()
-
-    st.session_state.pop("owners", None)
-    st.session_state.pop("clinic", None)
-
-def get_owners() -> list[Owner]:
-    ensure_demo_data()
-    if "owners" not in st.session_state or not st.session_state.owners:
-        disk_owners = _load_owners_from_disk()
-        if disk_owners:
-            st.session_state.owners = disk_owners
-        elif "owners" not in st.session_state:
-            st.session_state.owners = [Owner("Jordan")]
-    return st.session_state.owners
-
-def get_combined_owner() -> Owner:
-    return Owner(
-        "All Owners",
-        pets=[pet for owner in get_owners() for pet in owner.pets],
-    )
-
-def get_scheduler() -> Scheduler:
-    return Scheduler(get_combined_owner())
-
-def save_owners(owners: list[Owner]) -> None:
-    save_owners_to_json(owners, str(DATA_PATH))
-
-def save_owner(owner: Owner) -> None:
-    save_owners(get_owners())
-
-def get_clinic() -> Clinic:
-    ensure_demo_data()
-    if "clinic" not in st.session_state or not st.session_state.clinic:
-        disk_clinic = _load_clinic_from_disk()
-        if disk_clinic is not None:
-            st.session_state.clinic = disk_clinic
-        elif "clinic" not in st.session_state:
-            st.session_state.clinic = Clinic()
-    return st.session_state.clinic
-
-def save_clinic(clinic: Clinic) -> None:
-    clinic.save_to_json(str(CLINIC_DATA_PATH))
-
-
-def render_page_banner(page_key: str) -> None:
-    """Render a page banner image if a matching asset exists."""
-    banner_path = PAGE_BANNERS.get(page_key)
-    if banner_path and banner_path.exists():
-        st.image(str(banner_path), use_container_width=True)
-
-
-def render_live_clock(note: str | None = None) -> None:
-    """Render a small live clock card that updates client-side every second."""
-    current = datetime.now()
-    initial_time = current.strftime("%I:%M:%S %p").lstrip("0")
-    initial_date = current.strftime("%A, %B ") + str(current.day) + current.strftime(", %Y")
-    note_html = f"<div class='pp-clock-note'>{html.escape(note)}</div>" if note else ""
-    clock_html = f"""
-    <style>
-      .pp-clock-card {{
-        border: 1px solid rgba(151, 167, 196, 0.28);
-        border-radius: 10px;
-        padding: 12px 14px;
-        background: #F7F9FC;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        color: #102542;
-      }}
-      .pp-clock-head {{
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 12px;
-        margin-bottom: 8px;
-      }}
-      .pp-clock-label {{
-        font-size: 0.82rem;
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
-        color: #5b6572;
-        font-weight: 700;
-      }}
-      .pp-clock-note {{
-        font-size: 0.8rem;
-        color: #5b6572;
-      }}
-      .pp-clock-time {{
-        font-size: 2.2rem;
-        font-weight: 800;
-        line-height: 1.1;
-        color: #102542;
-      }}
-      .pp-clock-date {{
-        margin-top: 2px;
-        font-size: 0.94rem;
-        color: #5b6572;
-      }}
-    </style>
-    <div class="pp-clock-card">
-      <div class="pp-clock-head">
-        <div class="pp-clock-label">Live Clock</div>
-        {note_html}
-      </div>
-      <div class="pp-clock-time" id="pp-clock-time">{initial_time}</div>
-      <div class="pp-clock-date" id="pp-clock-date">{initial_date}</div>
-    </div>
-    <script>
-      const timeEl = document.getElementById("pp-clock-time");
-      const dateEl = document.getElementById("pp-clock-date");
-      function updateClock() {{
-        const now = new Date();
-        const time = now.toLocaleTimeString([], {{ hour: "numeric", minute: "2-digit", second: "2-digit" }});
-        const date = now.toLocaleDateString([], {{ weekday: "long", month: "long", day: "numeric", year: "numeric" }});
-        timeEl.textContent = time;
-        dateEl.textContent = date;
-      }}
-      updateClock();
-      setInterval(updateClock, 1000);
-    </script>
-    """
-    components.html(clock_html, height=150)
+from state import (
+    ensure_demo_data,
+    get_clinic,
+    get_combined_owner,
+    get_owners,
+    get_scheduler,
+    save_clinic,
+    save_owner,
+    save_owners,
+)
+from ui_helpers import render_live_clock, render_page_banner
 
 # ==========================================
 # 📎 FILE UPLOAD UTILITIES

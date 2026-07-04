@@ -25,15 +25,16 @@ def render_info_card(owner, pet) -> None:
 
 def render_visit_statistics_card(pet) -> None:
     """Render a large emoji placeholder in the middle card."""
+    icon = pet_species_icon(pet.species)
     with st.container(border=True):
-        st.markdown("**📈**")
         st.markdown(
-            "<div style='text-align:center; font-size:40px; line-height:1.2; padding: 1rem 0 0.75rem;'>"
-            "📈"
+            "<div style='min-height: 260px; display:flex; flex-direction:column; "
+            "align-items:center; justify-content:center; text-align:center;'>"
+            f"<div style='font-size:72px; line-height:1;'>{icon}</div>"
+            f"<div style='font-weight:700; font-size:1rem; margin-top:0.25rem;'>{pet.species.capitalize()}</div>"
             "</div>",
             unsafe_allow_html=True,
         )
-        st.caption("No completed vet visits yet.")
 
 
 def render_diet_card(pet) -> None:
@@ -204,6 +205,17 @@ else:
             render_visit_statistics_card(selected_pet)
         with top_row[2]:
             render_diet_card(selected_pet)
+
+        note_row = st.columns(3)
+        with note_row[1]:
+            with st.container(border=True):
+                st.markdown(
+                    "<div style='text-align:center; color: #9aa0a6; font-size: 0.95rem; "
+                    "line-height: 1.2; padding: 0.15rem 0;'>"
+                    "No completed vet visits yet."
+                    "</div>",
+                    unsafe_allow_html=True,
+                )
 
         middle_row = st.columns(2)
         with middle_row[0]:
