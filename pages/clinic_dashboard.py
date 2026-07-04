@@ -5,36 +5,19 @@ import streamlit as st
 
 from app_common import get_clinic, get_owners, render_live_clock
 
-QUICK_ACTIONS = [
-    ("📋", "Appointments", "pages/appointments.py"),
-    ("🧾", "Patients", "pages/patients.py"),
-    ("👩‍⚕️", "Doctors", "pages/doctors.py"),
-    ("💲", "Services", "pages/services.py"),
-]
-
 owners = get_owners()
 clinic = get_clinic()
 
 st.title("🏥 Clinic Dashboard")
 st.caption("A clinic-wide view across every owner's pets — not scoped to one owner.")
 render_live_clock("Clinic dashboard")
+st.image("assets/clinic_dashboard_homepage.png", use_container_width=True)
 
 stat_cols = st.columns(4)
 stat_cols[0].metric("Doctors", len(clinic.doctors))
 stat_cols[1].metric("Patients", sum(len(owner.pets) for owner in owners))
 stat_cols[2].metric("Appointments", len(clinic.appointments))
 stat_cols[3].metric("Income", f"${clinic.income():.2f}")
-
-st.subheader("Quick Actions")
-action_cols = st.columns(4)
-for index, (icon, label, path) in enumerate(QUICK_ACTIONS):
-    with action_cols[index % 4]:
-        with st.container(border=True):
-            st.markdown(
-                f"<div style='text-align:center; font-size:2rem;'>{icon}</div>",
-                unsafe_allow_html=True,
-            )
-            st.page_link(path, label=label, use_container_width=True)
 
 st.divider()
 chart_cols = st.columns(2)
