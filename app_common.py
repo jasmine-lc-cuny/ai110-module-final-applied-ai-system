@@ -44,6 +44,22 @@ APP_THEME_CSS = """
     background: #E9D7BF;
     color: #1F2A44;
   }
+  section.main {
+    color: #1F2A44;
+  }
+  section.main h1,
+  section.main h2,
+  section.main h3,
+  section.main h4,
+  section.main h5,
+  section.main h6,
+  section.main p,
+  section.main span,
+  section.main label,
+  section.main li,
+  section.main div[data-testid="stMarkdownContainer"] {
+    color: #1F2A44;
+  }
   section[data-testid="stSidebar"] {
     background: #DFC9AA;
   }
@@ -60,14 +76,22 @@ APP_THEME_CSS = """
     border-radius: 12px;
   }
   .stButton > button {
-    background: #3C9D9B;
+    background: #2F8F8C;
     color: #FFFFFF;
-    border: 1px solid #2E7F7D;
+    border: 1px solid #276C6A;
     border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(31, 42, 68, 0.12);
   }
   .stButton > button:hover {
-    background: #2E7F7D;
+    background: #276C6A;
     color: #FFFFFF;
+  }
+  section.main [data-testid="stTable"] table,
+  section.main [data-testid="stDataFrame"] table,
+  section.main table,
+  section.main th,
+  section.main td {
+    color: #1F2A44 !important;
   }
   div[data-testid="stTable"] {
     background: rgba(255, 255, 255, 0.58);
