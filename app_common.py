@@ -8,6 +8,7 @@ import streamlit as st
 
 from constants import (
     A_LA_BARK_MENU,
+    APPOINTMENT_STATUS_COLORS,
     CATEGORY_TASK_TITLES,
     CATEGORY_TO_SECTION,
     COMMON_SERVICES,
