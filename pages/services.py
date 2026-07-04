@@ -1,7 +1,7 @@
 import streamlit as st
 
 from pawpal_system import Service
-from app_common import COMMON_SERVICES, get_clinic, save_clinic
+from app_common import COMMON_SERVICES, get_clinic, render_live_clock, save_clinic
 
 clinic = get_clinic()
 common_service_names = [name for name, _ in COMMON_SERVICES]
@@ -9,6 +9,7 @@ common_service_costs = dict(COMMON_SERVICES)
 
 st.title("💲 Services")
 st.caption("Maintain the price list of services the clinic can bill.")
+render_live_clock("Services")
 
 # Outside the form so picking "Other (custom)" immediately reveals the
 # custom-name field below, and so the Cost field can pre-fill with that

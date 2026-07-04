@@ -2,9 +2,10 @@
 
 import re
 import uuid
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
+import streamlit.components.v1 as components
 import streamlit as st
 
 from pawpal_system import (
@@ -367,6 +368,77 @@ def get_clinic() -> Clinic:
 def save_clinic(clinic: Clinic) -> None:
     clinic.save_to_json(str(CLINIC_DATA_PATH))
 
+
+def render_live_clock(note: str | None = None) -> None:
+    """Render a small live clock card that updates client-side every second."""
+    current = datetime.now()
+    initial_time = current.strftime("%I:%M:%S %p").lstrip("0")
+    initial_date = current.strftime("%A, %B ") + str(current.day) + current.strftime(", %Y")
+    note_html = f"<div class='pp-clock-note'>{note}</div>" if note else ""
+    clock_html = f"""
+    <style>
+      .pp-clock-card {{
+        border: 1px solid rgba(151, 167, 196, 0.28);
+        border-radius: 12px;
+        padding: 14px 16px;
+        background: linear-gradient(180deg, rgba(59, 91, 219, 0.10), rgba(9, 146, 104, 0.08));
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }}
+      .pp-clock-head {{
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        margin-bottom: 8px;
+      }}
+      .pp-clock-label {{
+        font-size: 0.82rem;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: #6c757d;
+        font-weight: 700;
+      }}
+      .pp-clock-note {{
+        font-size: 0.8rem;
+        color: #495057;
+      }}
+      .pp-clock-time {{
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: #102542;
+      }}
+      .pp-clock-date {{
+        margin-top: 2px;
+        font-size: 0.94rem;
+        color: #495057;
+      }}
+    </style>
+    <div class="pp-clock-card">
+      <div class="pp-clock-head">
+        <div class="pp-clock-label">Live Clock</div>
+        {note_html}
+      </div>
+      <div class="pp-clock-time" id="pp-clock-time">{initial_time}</div>
+      <div class="pp-clock-date" id="pp-clock-date">{initial_date}</div>
+    </div>
+    <script>
+      const timeEl = document.getElementById("pp-clock-time");
+      const dateEl = document.getElementById("pp-clock-date");
+      function updateClock() {{
+        const now = new Date();
+        const time = now.toLocaleTimeString([], {{ hour: "numeric", minute: "2-digit", second: "2-digit" }});
+        const date = now.toLocaleDateString([], {{ weekday: "long", month: "long", day: "numeric", year: "numeric" }});
+        timeEl.textContent = time;
+        dateEl.textContent = date;
+      }}
+      updateClock();
+      setInterval(updateClock, 1000);
+    </script>
+    """
+    components.html(clock_html, height=120)
+
 # ==========================================
 # 📎 FILE UPLOAD UTILITIES
 # ==========================================
@@ -491,6 +563,7 @@ def render_category_page(
     )
 
     st.title(page_title if page_title else f"{icon} {display_name}")
+    render_live_clock(f"{display_name} view")
 
     if "ui_alert_success" in st.session_state:
         st.success(st.session_state.pop("ui_alert_success"))
@@ -774,6 +847,7 @@ def render_category_page(
 
 def render_placeholder_page(display_name: str, icon: str) -> None:
     st.title(f"{icon} {display_name}")
+    render_live_clock(f"{display_name} placeholder")
     st.info(
         f"{display_name} isn't wired up to specific task types yet — this page "
         "is a placeholder for a future update."

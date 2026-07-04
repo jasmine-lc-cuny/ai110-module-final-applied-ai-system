@@ -4,7 +4,7 @@ from datetime import date
 import pandas as pd
 import streamlit as st
 
-from app_common import get_clinic, get_owners, get_scheduler, task_rows
+from app_common import get_clinic, get_owners, get_scheduler, render_live_clock, task_rows
 
 SERVICE_LINKS = [
     ("🛁", "Grooming", "pages/grooming.py"),
@@ -40,6 +40,7 @@ today = date.today()
 
 st.title("🛎️ Book a Service Dashboard")
 st.caption("A service-first overview across booking pages, task volume, and staff coverage.")
+render_live_clock("Book a Service dashboard")
 
 metric_cols = st.columns(4)
 metric_cols[0].metric("Bookable sections", len(SERVICE_LINKS) - 1)

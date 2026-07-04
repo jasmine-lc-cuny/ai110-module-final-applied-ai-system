@@ -6,6 +6,7 @@ from app_common import (
     get_combined_owner,
     get_owners,
     get_scheduler,
+    render_live_clock,
     save_owner,
     task_pair_label,
     task_rows,
@@ -17,6 +18,7 @@ real_owners = get_owners()
 
 st.title("📅 Today's Schedule")
 st.caption("See today's schedule, priorities, and conflicts, and complete, delete, or reopen tasks.")
+render_live_clock("Today's schedule")
 
 # Deduplicated: several owners have same-named pets, and the filter matches
 # by name anyway (duplicate option labels are also unsafe — see pet_label).

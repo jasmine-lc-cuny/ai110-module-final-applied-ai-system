@@ -1,11 +1,12 @@
 import streamlit as st
 
-from app_common import get_owners
+from app_common import get_owners, render_live_clock
 
 owners = get_owners()
 
 st.title("🐾 Pet Profile")
 st.caption("A quick directory of every pet and its owner.")
+render_live_clock("Pet Profile")
 st.page_link("pages/patients.py", label="Go to Patients to add, edit, or delete a pet", icon="🧾")
 
 rows = [

@@ -3,7 +3,7 @@ from collections import Counter, defaultdict
 import pandas as pd
 import streamlit as st
 
-from app_common import get_clinic, get_owners
+from app_common import get_clinic, get_owners, render_live_clock
 
 QUICK_ACTIONS = [
     ("📋", "Appointments", "pages/appointments.py"),
@@ -17,6 +17,7 @@ clinic = get_clinic()
 
 st.title("🏥 Clinic Dashboard")
 st.caption("A clinic-wide view across every owner's pets — not scoped to one owner.")
+render_live_clock("Clinic dashboard")
 
 stat_cols = st.columns(4)
 stat_cols[0].metric("Doctors", len(clinic.doctors))

@@ -2,7 +2,7 @@ from datetime import date
 
 import streamlit as st
 
-from app_common import get_combined_owner, get_scheduler, task_rows
+from app_common import get_combined_owner, get_scheduler, render_live_clock, task_rows
 
 TASK_LINKS = [
     ("📊", "Pet Profile", "pages/dashboard.py"),
@@ -23,6 +23,7 @@ today = date.today()
 
 st.title("📝 Task Hub")
 st.caption("A single place to review today's work, jump into task setup, and see what is coming next.")
+render_live_clock("Task Hub")
 
 metric_cols = st.columns(4)
 metric_cols[0].metric("Pets", len(owner.pets))

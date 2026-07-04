@@ -8,7 +8,7 @@ session, so the same Owner object is used no matter which page is active.
 
 import streamlit as st
 
-from app_common import get_combined_owner, get_scheduler
+from app_common import get_combined_owner, get_scheduler, render_live_clock
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="wide")
 
@@ -29,6 +29,7 @@ def home_page():
 
     st.title("🐾 PawPal+")
     st.caption("Welcome back! What would you like to do today?")
+    render_live_clock("Home dashboard")
 
     st.subheader("🛎️ Book a Service")
     cols = st.columns(3)

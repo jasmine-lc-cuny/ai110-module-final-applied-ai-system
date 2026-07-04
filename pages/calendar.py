@@ -10,6 +10,7 @@ from app_common import (
     PET_TIMELINE_COLORS,
     get_combined_owner,
     get_scheduler,
+    render_live_clock,
     task_rows,
 )
 
@@ -91,6 +92,7 @@ scheduler = get_scheduler()
 
 st.title("🗓️ Calendar")
 st.caption("Browse tasks by month, and drill into any day's full schedule.")
+render_live_clock("Calendar")
 
 if not owner.pets:
     st.info("Add a pet to see their calendar here.")

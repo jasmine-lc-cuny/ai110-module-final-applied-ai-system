@@ -1,7 +1,7 @@
 import streamlit as st
 
 from pawpal_system import Owner, Pet, pet_species_icon
-from app_common import NEW_OWNER_CHOICE, get_owners, save_owners
+from app_common import NEW_OWNER_CHOICE, get_owners, render_live_clock, save_owners
 
 # ==========================================
 # 🐾 MASTER SPECIES ARCHITECTURE
@@ -23,6 +23,7 @@ owners = get_owners()
 
 st.title("🧾 Patients")
 st.caption("Register, edit, and search patients (pets and their owners).")
+render_live_clock("Patients")
 st.page_link("pages/dashboard.py", label="View the Pet Profile directory", icon="🐾")
 
 # ==========================================

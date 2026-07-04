@@ -1,12 +1,13 @@
 import streamlit as st
 
 from pawpal_system import Doctor
-from app_common import get_clinic, save_clinic
+from app_common import get_clinic, render_live_clock, save_clinic
 
 clinic = get_clinic()
 
 st.title("👩‍⚕️ Doctors")
 st.caption("Manage the clinic's medical staff.")
+render_live_clock("Doctors")
 
 st.subheader("Add New Doctor")
 # Same collapse pattern as the Patients page forms: a session flag +

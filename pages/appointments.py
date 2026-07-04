@@ -8,6 +8,7 @@ from app_common import (
     CATEGORY_TASK_TITLES,
     get_clinic,
     get_owners,
+    render_live_clock,
     render_veterinary_reason_picker,
     save_clinic,
     save_owners,
@@ -193,6 +194,7 @@ clinic = get_clinic()
 
 st.title("📋 Appointments")
 st.caption("Book new appointments and manage their status.")
+render_live_clock("Appointments")
 
 status_filter = st.sidebar.selectbox("Filter by status", ["All"] + APPOINTMENT_STATUSES)
 

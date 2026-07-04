@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 
 from pawpal_system import format_time_12h, pet_species_icon, task_type_icon
-from app_common import get_owners
+from app_common import get_owners, render_live_clock
 
 VET_ICONS = {"🏥", "💊"}
 
@@ -99,6 +99,7 @@ all_patients = [(owner, pet) for owner in owners for pet in owner.pets]
 
 st.title("📊 Dashboard - 🐾 Pet Profile")
 st.caption("Search for a patient to view their complete clinical overview and profile.")
+render_live_clock("Pet Profile dashboard")
 
 if not all_patients:
     st.info("Add a pet to see their dashboard here.")

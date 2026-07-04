@@ -1,7 +1,7 @@
 import streamlit as st
 
 from pawpal_system import Staff
-from app_common import SERVICE_SECTIONS, get_clinic, save_clinic
+from app_common import SERVICE_SECTIONS, get_clinic, render_live_clock, save_clinic
 
 clinic = get_clinic()
 section_labels = [label for _, label in SERVICE_SECTIONS]
@@ -9,6 +9,7 @@ section_icons = dict((label, icon) for icon, label in SERVICE_SECTIONS)
 
 st.title("👥 Service Staff")
 st.caption("Manage the team assigned to each bookable service.")
+render_live_clock("Service staff")
 
 st.subheader("Add New Staff Member")
 # Same collapse pattern as the Doctors/Patients pages: a session flag + button
