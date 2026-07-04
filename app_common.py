@@ -1,5 +1,6 @@
 """Shared state and UI helpers used across every page of the multi-page app."""
 
+import html
 import re
 import uuid
 from datetime import date, datetime
@@ -37,60 +38,6 @@ PAGE_BANNERS = {
     "walking": BANNER_DIR / "walking.png",
     "special_services": BANNER_DIR / "dog_cafe.png",
 }
-
-APP_THEME_CSS = """
-  }
-  section.main h1,
-  section.main h2,
-  section.main h3,
-  section.main h4,
-  section.main h5,
-  section.main h6,
-  section.main p,
-  section.main span,
-  section.main label,
-  section.main li,
-  section.main div[data-testid="stMarkdownContainer"] {
-    color: #1F2A44;
-  }
-  section[data-testid="stSidebar"] {
-    background: #DFC9AA;
-  }
-  .stApp [data-testid="stHeader"] {
-    background: rgba(233, 215, 191, 0.92);
-  }
-  .stApp [data-testid="stToolbar"] {
-    background: transparent;
-  }
-  div[data-testid="stMetric"] {
-    background: rgba(255, 255, 255, 0.45);
-    border: 1px solid rgba(31, 42, 68, 0.08);
-    padding: 0.5rem 0.75rem;
-    border-radius: 12px;
-  }
-  .stButton > button {
-    background: #2F8F8C;
-    color: #FFFFFF;
-    border: 1px solid #276C6A;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(31, 42, 68, 0.12);
-  }
-  .stButton > button:hover {
-    background: #276C6A;
-    color: #FFFFFF;
-  }
-  section.main [data-testid="stTable"] table,
-  section.main [data-testid="stDataFrame"] table,
-  section.main table,
-  section.main th,
-  section.main td {
-    color: #1F2A44 !important;
-  }
-  div[data-testid="stTable"] {
-    background: rgba(255, 255, 255, 0.58);
-  }
-</style>
-"""
 
 APPOINTMENT_STATUS_COLORS = {
     "Pending": "yellow",
@@ -445,8 +392,48 @@ def render_live_clock(note: str | None = None) -> None:
     current = datetime.now()
     initial_time = current.strftime("%I:%M:%S %p").lstrip("0")
     initial_date = current.strftime("%A, %B ") + str(current.day) + current.strftime(", %Y")
-    note_html = f"<div class='pp-clock-note'>{note}</div>" if note else ""
+    note_html = f"<div class='pp-clock-note'>{html.escape(note)}</div>" if note else ""
     clock_html = f"""
+    <style>
+      .pp-clock-card {{
+        border: 1px solid rgba(151, 167, 196, 0.28);
+        border-radius: 10px;
+        padding: 12px 14px;
+        background: #F7F9FC;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #102542;
+      }}
+      .pp-clock-head {{
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        margin-bottom: 8px;
+      }}
+      .pp-clock-label {{
+        font-size: 0.82rem;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: #5b6572;
+        font-weight: 700;
+      }}
+      .pp-clock-note {{
+        font-size: 0.8rem;
+        color: #5b6572;
+      }}
+      .pp-clock-time {{
+        font-size: 2.2rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: #102542;
+      }}
+      .pp-clock-date {{
+        margin-top: 2px;
+        font-size: 0.94rem;
+        color: #5b6572;
+      }}
+    </style>
     <div class="pp-clock-card">
       <div class="pp-clock-head">
         <div class="pp-clock-label">Live Clock</div>
@@ -469,7 +456,7 @@ def render_live_clock(note: str | None = None) -> None:
       setInterval(updateClock, 1000);
     </script>
     """
-    components.html(clock_html, height=120)
+    components.html(clock_html, height=150)
 
 # ==========================================
 # 📎 FILE UPLOAD UTILITIES
