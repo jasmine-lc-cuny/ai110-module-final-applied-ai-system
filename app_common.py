@@ -38,6 +38,43 @@ PAGE_BANNERS = {
     "special_services": BANNER_DIR / "dog_cafe.png",
 }
 
+APP_THEME_CSS = """
+<style>
+  .stApp {
+    background: #E9D7BF;
+    color: #1F2A44;
+  }
+  section[data-testid="stSidebar"] {
+    background: #DFC9AA;
+  }
+  .stApp [data-testid="stHeader"] {
+    background: rgba(233, 215, 191, 0.92);
+  }
+  .stApp [data-testid="stToolbar"] {
+    background: transparent;
+  }
+  div[data-testid="stMetric"] {
+    background: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(31, 42, 68, 0.08);
+    padding: 0.5rem 0.75rem;
+    border-radius: 12px;
+  }
+  .stButton > button {
+    background: #3C9D9B;
+    color: #FFFFFF;
+    border: 1px solid #2E7F7D;
+    border-radius: 12px;
+  }
+  .stButton > button:hover {
+    background: #2E7F7D;
+    color: #FFFFFF;
+  }
+  div[data-testid="stTable"] {
+    background: rgba(255, 255, 255, 0.58);
+  }
+</style>
+"""
+
 APPOINTMENT_STATUS_COLORS = {
     "Pending": "yellow",
     "Confirmed": "blue",

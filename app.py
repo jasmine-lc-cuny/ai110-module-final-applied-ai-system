@@ -8,9 +8,16 @@ session, so the same Owner object is used no matter which page is active.
 
 import streamlit as st
 
-from app_common import get_combined_owner, get_scheduler, render_live_clock, render_page_banner
+from app_common import (
+    APP_THEME_CSS,
+    get_combined_owner,
+    get_scheduler,
+    render_live_clock,
+    render_page_banner,
+)
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="wide")
+st.markdown(APP_THEME_CSS, unsafe_allow_html=True)
 
 SERVICES = [
     ("🛎️", "Service Dashboard", "pages/book_service_dashboard.py"),
