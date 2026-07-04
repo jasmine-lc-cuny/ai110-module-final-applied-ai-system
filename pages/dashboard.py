@@ -24,22 +24,16 @@ def render_info_card(owner, pet) -> None:
 
 
 def render_visit_statistics_card(pet) -> None:
-    """Render the monthly completed-vet-visit line chart card."""
+    """Render a large emoji placeholder in the visit-statistics card."""
     with st.container(border=True):
         st.markdown("**📈 Visit statistics**")
-        monthly_counts = defaultdict(int)
-        for task in pet.tasks:
-            if task.completed and task_type_icon(task.title) in VET_ICONS:
-                monthly_counts[date(task.due_date.year, task.due_date.month, 1)] += 1
-        if monthly_counts:
-            sorted_months = sorted(monthly_counts.keys())
-            chart_data = pd.DataFrame(
-                {"Vet visits": [monthly_counts[month] for month in sorted_months]},
-                index=[month.strftime("%b %Y") for month in sorted_months],
-            )
-            st.line_chart(chart_data)
-        else:
-            st.info("No completed vet visits yet.")
+        st.markdown(
+            "<div style='text-align:center; font-size:40px; line-height:1.2; padding: 1.5rem 0 1rem;'>"
+            "📈"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        st.caption("No completed vet visits yet.")
 
 
 def render_diet_card(pet) -> None:

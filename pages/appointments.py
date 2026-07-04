@@ -1,4 +1,5 @@
 import re
+from datetime import date
 
 import streamlit as st
 
@@ -207,7 +208,15 @@ visible_appointments = sorted(clinic.appointments, key=lambda a: (a.date, a.time
 if status_filter != "All":
     visible_appointments = [a for a in visible_appointments if a.status == status_filter]
 
-if visible_appointments:
+today = date.today()
+tomorrow = today.fromordinal(today.toordinal() + 1)
+
+def _render_appointment_block(title: str, appointments: list[Appointment], empty_text: str) -> None:
+    st.subheader(title)
+    if not appointments:
+        st.info(empty_text)
+        return
+
     row_widths = [2, 2, 2, 3, 1.5, 1]
     header_cols = st.columns(row_widths)
     for header_col, label in zip(
@@ -215,7 +224,7 @@ if visible_appointments:
     ):
         header_col.markdown(f"**{label}**")
 
-    for row_index, appointment in enumerate(visible_appointments):
+    for row_index, appointment in enumerate(appointments):
         owner = find_owner(owners, appointment.owner_name)
         pet = owner.find_pet(appointment.pet_name) if owner else None
         doctor = clinic.find_doctor(appointment.doctor_username)
@@ -230,8 +239,19 @@ if visible_appointments:
         with row_cols[4]:
             st.badge(appointment.status, color=APPOINTMENT_STATUS_COLORS[appointment.status])
         with row_cols[5]:
-            if st.button("✏️ Edit", key=f"appt_edit_{row_index}"):
+            if st.button("✏️ Edit", key=f"appt_edit_{title.lower().replace(' ', '_')}_{row_index}"):
                 update_status_dialog(clinic, appointment, owners)
+
+today_appointments = [a for a in visible_appointments if a.date == today]
+tomorrow_appointments = [a for a in visible_appointments if a.date == tomorrow]
+later_appointments = [a for a in visible_appointments if a.date not in {today, tomorrow}]
+
+if visible_appointments:
+    _render_appointment_block("Today", today_appointments, "No appointments scheduled for today.")
+    st.divider()
+    _render_appointment_block("Tomorrow", tomorrow_appointments, "No appointments scheduled for tomorrow.")
+    st.divider()
+    _render_appointment_block("Later Appointments", later_appointments, "No later appointments yet.")
 else:
     st.info("No appointments yet.")
 

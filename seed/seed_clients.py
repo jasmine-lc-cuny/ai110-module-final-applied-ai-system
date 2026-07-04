@@ -148,6 +148,7 @@ def seed_clients() -> None:
         clinic = Clinic()
 
     _ensure_clinic_defaults(clinic)
+    clinic.appointments = []
 
     owners_by_name = {owner.name.lower(): owner for owner in owners}
 
@@ -181,7 +182,7 @@ def seed_clients() -> None:
                 pet.add_task(task)
 
             doctor = _doctor_for_species(clinic, pet.species)
-            appointment_date = clock_anchor.date() + timedelta(days=pet_index)
+            appointment_date = clock_anchor.date() + timedelta(days=min(pet_index, 1))
             appointment_time = _time_after(clock_anchor, 30 + pet_index * 25)
             clinic.appointments.append(
                 Appointment(
