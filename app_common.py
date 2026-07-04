@@ -31,11 +31,11 @@ NEW_OWNER_CHOICE = "+ Add new owner"
 
 PAGE_BANNERS = {
     "home": Path("assets") / "homepage.png",
-    "grooming": BANNER_DIR / "grooming.svg",
-    "sitting": BANNER_DIR / "sitting.svg",
-    "training": BANNER_DIR / "training.svg",
-    "walking": BANNER_DIR / "walking.svg",
-    "special_services": BANNER_DIR / "dog_cafe.svg",
+    "grooming": BANNER_DIR / "grooming.png",
+    "sitting": BANNER_DIR / "sitting.png",
+    "training": BANNER_DIR / "training.png",
+    "walking": BANNER_DIR / "walking.png",
+    "special_services": BANNER_DIR / "dog_cafe.png",
 }
 
 APPOINTMENT_STATUS_COLORS = {
