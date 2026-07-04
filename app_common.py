@@ -39,13 +39,6 @@ PAGE_BANNERS = {
 }
 
 APP_THEME_CSS = """
-<style>
-  .stApp {
-    background: #E9D7BF;
-    color: #1F2A44;
-  }
-  section.main {
-    color: #1F2A44;
   }
   section.main h1,
   section.main h2,
@@ -454,45 +447,6 @@ def render_live_clock(note: str | None = None) -> None:
     initial_date = current.strftime("%A, %B ") + str(current.day) + current.strftime(", %Y")
     note_html = f"<div class='pp-clock-note'>{note}</div>" if note else ""
     clock_html = f"""
-    <style>
-      .pp-clock-card {{
-        border: 1px solid rgba(151, 167, 196, 0.28);
-        border-radius: 12px;
-        padding: 14px 16px;
-        background: linear-gradient(180deg, rgba(59, 91, 219, 0.10), rgba(9, 146, 104, 0.08));
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      }}
-      .pp-clock-head {{
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 12px;
-        margin-bottom: 8px;
-      }}
-      .pp-clock-label {{
-        font-size: 0.82rem;
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
-        color: #6c757d;
-        font-weight: 700;
-      }}
-      .pp-clock-note {{
-        font-size: 0.8rem;
-        color: #495057;
-      }}
-      .pp-clock-time {{
-        font-size: 2rem;
-        font-weight: 800;
-        line-height: 1.1;
-        color: #102542;
-      }}
-      .pp-clock-date {{
-        margin-top: 2px;
-        font-size: 0.94rem;
-        color: #495057;
-      }}
-    </style>
     <div class="pp-clock-card">
       <div class="pp-clock-head">
         <div class="pp-clock-label">Live Clock</div>
