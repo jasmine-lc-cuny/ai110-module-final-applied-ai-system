@@ -33,8 +33,11 @@ STATUS_OPTIONS = ["Pending", "Confirmed", "Completed"]
 
 TASK_TEMPLATES = [
     ("Morning Walk", "walking", 30, "high", "daily"),
+    ("Afternoon Walk", "walking", 30, "medium", "daily"),
     ("Brush Coat", "grooming", 20, "medium", "once"),
+    ("Wash / Bath", "grooming", 30, "medium", "once"),
     ("Breakfast", "special_services", 15, "medium", "daily"),
+    ("Lunch", "special_services", 15, "medium", "daily"),
     ("Vet Appointment", "veterinary", 30, "high", "once"),
 ]
 
@@ -140,8 +143,16 @@ def _seed_vet_appointments(owners, clinic: Clinic, anchor: datetime) -> list[tup
     return rows
 
 
-def seed_random_appointments(mode: str = "all") -> None:
-    """Seed either dog services, cat services, vet appointments, or all of them."""
+def _clear_schedule_layer(owners, clinic: Clinic) -> None:
+    """Remove existing tasks and appointments so each seed mode starts clean."""
+    for owner in owners:
+        for pet in owner.pets:
+            pet.tasks = []
+    clinic.appointments = []
+
+
+def seed_random_appointments(mode: str = "services") -> None:
+    """Seed dog/cat services, vet appointments, or both."""
     now = datetime.now()
     anchor = _round_up_to_quarter(now)
 
@@ -155,13 +166,14 @@ def seed_random_appointments(mode: str = "all") -> None:
         return
 
     random.seed(anchor.toordinal())
+    _clear_schedule_layer(owners, clinic)
 
     appointment_rows = []
     service_task_count = 0
 
-    if mode in {"all", "dogs"}:
+    if mode in {"services", "all", "dogs"}:
         service_task_count += _seed_service_tasks(owners, anchor, species="dog", categories=DOG_SERVICE_CATEGORIES)
-    if mode in {"all", "cats"}:
+    if mode in {"services", "all", "cats"}:
         service_task_count += _seed_service_tasks(owners, anchor, species="cat", categories=CAT_SERVICE_CATEGORIES)
 
     if mode in {"all", "vet"}:
@@ -183,9 +195,9 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "mode",
         nargs="?",
-        default="all",
-        choices=["all", "dogs", "cats", "vet"],
-        help="What to seed: all, dog services, cat services, or vet appointments.",
+        default="services",
+        choices=["services", "all", "dogs", "cats", "vet"],
+        help="What to seed: services (dogs + cats), dog services, cat services, vet appointments, or all.",
     )
     return parser.parse_args()
 
