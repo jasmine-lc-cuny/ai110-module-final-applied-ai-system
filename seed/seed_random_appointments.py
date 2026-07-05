@@ -5,7 +5,7 @@ from __future__ import annotations
 import random
 import sys
 import argparse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from pathlib import Path
 
 from pawpal_system import Appointment, Clinic, Doctor, Task, load_owners_from_json, save_owners_to_json
@@ -43,6 +43,8 @@ TASK_TEMPLATES = [
 
 DOG_SERVICE_CATEGORIES = {"walking", "grooming", "training", "special_services"}
 CAT_SERVICE_CATEGORIES = {"grooming", "sitting"}
+DAY_START_MINUTES = 7 * 60
+DAY_END_MINUTES = 20 * 60
 
 
 def _round_up_to_quarter(moment: datetime) -> datetime:
@@ -50,6 +52,15 @@ def _round_up_to_quarter(moment: datetime) -> datetime:
     if minutes == 60:
         return moment.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
     return moment.replace(minute=minutes, second=0, microsecond=0)
+
+
+def _time_within_window(day: datetime, offset_minutes: int, duration_minutes: int = 0) -> str:
+    """Return an HH:MM time within the 7 AM to 8 PM seeding window."""
+    latest_start = DAY_END_MINUTES - max(duration_minutes, 1)
+    window_size = max(latest_start - DAY_START_MINUTES + 1, 1)
+    minute_of_day = DAY_START_MINUTES + (offset_minutes % window_size)
+    seeded = datetime.combine(day.date(), time(hour=0, minute=0)) + timedelta(minutes=minute_of_day)
+    return seeded.strftime("%H:%M")
 
 
 def _ensure_doctors(clinic: Clinic) -> None:
@@ -93,10 +104,11 @@ def _seed_service_tasks(owners, anchor: datetime, *, species: str, categories: s
                     (owner_index + pet_index + task_offset) % len(available_templates)
                 ]
                 due_date = anchor.date() + timedelta(days=(owner_index + pet_index + task_offset) % 2)
-                time_str = (
-                    anchor
-                    + timedelta(minutes=10 + owner_index * 6 + pet_index * 9 + task_offset * 13)
-                ).strftime("%H:%M")
+                time_str = _time_within_window(
+                    anchor,
+                    offset_minutes=10 + owner_index * 6 + pet_index * 9 + task_offset * 13,
+                    duration_minutes=duration,
+                )
                 pet.add_task(
                     Task(
                         title=title,
@@ -124,7 +136,7 @@ def _seed_vet_appointments(owners, clinic: Clinic, anchor: datetime) -> list[tup
         owner = next(owner for owner in owners if pet in owner.pets)
         doctor = _doctor_for_species(clinic, pet.species)
         due_date = anchor.date() + timedelta(days=index % 3)
-        time_str = (anchor + timedelta(minutes=20 + index * 17)).strftime("%H:%M")
+        time_str = _time_within_window(anchor, offset_minutes=20 + index * 17, duration_minutes=30)
         reason = random.choice(REASONS_BY_SPECIES.get(pet.species.lower(), ["General wellness check", "Follow-up visit"]))
         status = random.choice(STATUS_OPTIONS)
 
