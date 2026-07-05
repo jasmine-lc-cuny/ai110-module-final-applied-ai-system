@@ -1,6 +1,7 @@
 """Session state and persistence helpers for PawPal."""
 
 import streamlit as st
+from datetime import datetime
 
 from constants import CLINIC_DATA_PATH, DATA_PATH
 from pawpal_system import Clinic, Owner, Scheduler, load_owners_from_json, save_owners_to_json
@@ -26,6 +27,22 @@ def _load_clinic_from_disk() -> Clinic | None:
 
 def _owners_have_tasks(owners: list[Owner]) -> bool:
     return any(pet.tasks for owner in owners for pet in owner.pets)
+
+
+def _close_overdue_tasks(owners: list[Owner]) -> bool:
+    """Mark open tasks as complete once their scheduled time has passed."""
+    now = datetime.now()
+    changed = False
+    for owner in owners:
+        for pet in owner.pets:
+            for task in pet.tasks:
+                if task.completed:
+                    continue
+                task_time = datetime.strptime(task.time, "%H:%M").time()
+                if task.due_date < now.date() or (task.due_date == now.date() and task_time <= now.time()):
+                    task.completed = True
+                    changed = True
+    return changed
 
 
 def ensure_demo_data() -> None:
@@ -67,6 +84,10 @@ def ensure_demo_data() -> None:
         from seed.seed_random_appointments import seed_random_appointments
 
         seed_random_appointments()
+        disk_owners = _load_owners_from_disk()
+
+    if _close_overdue_tasks(disk_owners):
+        save_owners_to_json(disk_owners, str(DATA_PATH))
 
     st.session_state.pop("owners", None)
     st.session_state.pop("clinic", None)

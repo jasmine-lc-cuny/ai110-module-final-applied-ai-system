@@ -97,7 +97,6 @@ def task_rows(task_pairs):
             "Assigned To": task.assignee or "—",
             "Duration": task.duration_minutes,
             "Priority": f"{priority_icon(task.priority)} {task.priority}",
-            "Frequency": task.frequency,
             "Due Date": task.due_date.isoformat(),
             "Status": "✅ Done" if task.completed else "⏳ Open",
         }
@@ -266,16 +265,25 @@ def render_category_booking_form(category: str, display_name: str, active_staff,
         return
 
     if category == "veterinary":
-        title = st.selectbox("Task", title_options, key=f"{category}_title_select")
+        selected_titles = [st.selectbox("Task", title_options, key=f"{category}_title_select")]
         selected_species = selected_owner.pets[selected_pet_index].species
-        reason = render_veterinary_reason_picker(title, selected_species, key_prefix=category)
+        reason = render_veterinary_reason_picker(selected_titles[0], selected_species, key_prefix=category)
     elif category == "special_services":
-        title = st.selectbox("Task", title_options, key=f"{category}_title_select")
+        selected_titles = [st.selectbox("Task", title_options, key=f"{category}_title_select")]
         reason = _render_dog_cafe_menu_picker()
     else:
-        title = st.selectbox("Task", title_options, key=f"{category}_title_select")
+        selected_titles = st.multiselect(
+            "Task(s)",
+            title_options,
+            default=title_options[:1],
+            key=f"{category}_title_select",
+        )
         st.text_input("Reason", value="—", disabled=True, key=f"{category}_disabled_reason")
         reason = None
+
+    if not selected_titles:
+        st.info("Pick at least one task to continue.")
+        return
 
     with st.form(f"add_{category}_task_form", clear_on_submit=True):
         date_col, staff_col = st.columns(2)
@@ -302,13 +310,12 @@ def render_category_booking_form(category: str, display_name: str, active_staff,
             period = st.selectbox("AM/PM", ["AM", "PM"], label_visibility="collapsed")
 
         if category == "special_services":
-            duration, priority, frequency = 60, "medium", "once"
+            duration, priority = 60, "medium"
             submitted = st.form_submit_button("Dog Cafe RSVP")
         else:
             duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=20)
             priority = st.selectbox("Priority", ["high", "medium", "low"])
-            frequency = st.selectbox("Frequency", ["once", "daily", "weekly"])
-            submitted = st.form_submit_button(f"Add {display_name} task")
+            submitted = st.form_submit_button(f"Add {display_name} task(s)")
 
     if submitted:
         hour_24 = hour_12 % 12
@@ -321,23 +328,26 @@ def render_category_booking_form(category: str, display_name: str, active_staff,
         if conflict:
             st.session_state["ui_alert_warning"] = f"⚠️ Schedule Conflict: {selected_pet.name} already has a task scheduled at {time_str} on {appt_date.isoformat()}. Double-booking detected!"
 
-        selected_pet.add_task(
-            Task(
-                title=title,
-                time=time_str,
-                duration_minutes=int(duration),
-                priority=priority,
-                frequency=frequency,
-                notes=reason,
-                due_date=appt_date,
-                category=category,
-                assignee=assignee,
+        for title in selected_titles:
+            selected_pet.add_task(
+                Task(
+                    title=title,
+                    time=time_str,
+                    duration_minutes=int(duration),
+                    priority=priority,
+                    notes=reason,
+                    due_date=appt_date,
+                    category=category,
+                    assignee=assignee,
+                )
             )
-        )
         save_owner(get_combined_owner())
-        success_message = f"Added {title} for {selected_pet.name}."
+        if len(selected_titles) == 1:
+            success_message = f"Added {selected_titles[0]} for {selected_pet.name}."
+        else:
+            success_message = f"Added {len(selected_titles)} tasks for {selected_pet.name}."
         if reason:
-            success_message = f"Added {title} ({reason}) for {selected_pet.name}."
+            success_message = f"Added {', '.join(selected_titles)} ({reason}) for {selected_pet.name}."
         st.session_state["ui_alert_success"] = success_message
         st.rerun()
 
