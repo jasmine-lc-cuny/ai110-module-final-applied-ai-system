@@ -24,6 +24,11 @@ import random
 import sys
 
 from pawpal_system import Owner, Pet, save_owners_to_json
+from seed.seed_dog_and_cat import DOG_AND_CAT_SPECIES
+from seed.seed_exotic_avian import EXOTIC_AVIAN_SPECIES
+from seed.seed_exotic_small_pet import EXOTIC_SMALL_PET_SPECIES
+from seed.seed_fish_and_invertebrates import FISH_AND_INVERTEBRATES_SPECIES
+from seed.seed_reptiles_and_amphibians import REPTILES_AND_AMPHIBIANS_SPECIES
 
 DATA_PATH = "data.json"
 
@@ -93,30 +98,13 @@ PET_NAMES = [
     "Rocco", "Sam", "Ziggy", "Mango", "Kiwi",
 ]
 
-SPECIES = [
-    # Common
-    ("dog", "mammal"), ("cat", "mammal"),
-    # Small Mammals
-    ("rabbit", "mammal"), ("bunny", "mammal"), ("hamster", "mammal"), ("gerbil", "mammal"),
-    ("mouse", "mammal"), ("mice", "mammal"), ("rat", "mammal"), ("chinchilla", "mammal"),
-    ("guinea pig", "mammal"), ("ferret", "mammal"), ("hedgehog", "mammal"),
-    ("sugar glider", "mammal"), ("squirrel", "mammal"),
-    # Avian
-    ("budgie", "avian"), ("canary", "avian"), ("finch", "avian"), ("parrot", "avian"),
-    ("cockatiel", "avian"), ("conure", "avian"), ("chicken", "avian"), ("duck", "avian"),
-    ("goose", "avian"), ("pigeon", "avian"), ("owl", "avian"), ("falcon", "avian"), ("snowy owl", "avian"),
-    # Reptiles
-    ("bearded dragon", "reptile"), ("leopard gecko", "reptile"), ("crested gecko", "reptile"),
-    ("chameleon", "reptile"), ("iguana", "reptile"), ("skink", "reptile"), ("turtle", "reptile"),
-    ("tortoise", "reptile"), ("corn snake", "reptile"), ("ball python", "reptile"),
-    ("king snake", "reptile"), ("frog", "reptile"), ("toad", "reptile"), ("newt", "reptile"),
-    ("salamander", "reptile"),
-    # Fish
-    ("betta", "fish"), ("guppy", "fish"), ("platy", "fish"), ("swordtail", "fish"),
-    ("molly", "fish"), ("tetra", "fish"), ("goldfish", "fish"), ("danio", "fish"),
-    ("minnow", "fish"), ("cichlid", "fish"), ("pleco", "fish"), ("clownfish", "fish"),
-    ("damselfish", "fish"), ("goby", "fish"), ("blenny", "fish"),
-]
+SPECIES = (
+    DOG_AND_CAT_SPECIES
+    + EXOTIC_SMALL_PET_SPECIES
+    + EXOTIC_AVIAN_SPECIES
+    + REPTILES_AND_AMPHIBIANS_SPECIES
+    + FISH_AND_INVERTEBRATES_SPECIES
+)
 
 EXOTIC_SPECIES = SPECIES[2:]  # everything except dog and cat
 
