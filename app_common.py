@@ -384,7 +384,14 @@ def render_category_page(
     active_staff = [member for member in get_clinic().staff_in_section(section) if member.active] if section else []
 
     render_category_header(category, display_name, icon, page_title)
-    category_tasks = scheduler.sort_by_time(tasks_in_category(owner, category))
+    today = date.today()
+    category_tasks = scheduler.sort_by_time(
+        [
+            (pet, task)
+            for pet, task in tasks_in_category(owner, category)
+            if task.due_date == today
+        ]
+    )
     title_options = CATEGORY_TASK_TITLES.get(category, [])
     selection = render_category_filters(category, display_name, owner, title_options)
     if selection is None:
