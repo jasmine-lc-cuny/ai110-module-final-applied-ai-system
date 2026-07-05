@@ -394,10 +394,10 @@ def render_category_page(
     if page_subtitle:
         st.subheader(page_subtitle)
 
-    render_category_schedule(category, display_name, category_tasks)
     if show_booking_form:
         st.subheader(f"Schedule a {display_name} Task")
         render_category_booking_form(category, display_name, active_staff, selected_owner, selected_pet_index)
+    render_category_schedule(category, display_name, category_tasks)
 def render_placeholder_page(display_name: str, icon: str) -> None:
     st.title(f"{icon} {display_name}")
     render_live_clock(f"{display_name} placeholder")
