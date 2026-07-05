@@ -63,10 +63,10 @@ def ensure_demo_data() -> None:
 
         seed_doctors()
 
-    if owners_missing_or_empty or tasks_missing:
-        from seed.seed_schedules import seed_schedules
+    if owners_missing_or_empty or tasks_missing or clinic_missing:
+        from seed.seed_random_appointments import seed_random_appointments
 
-        seed_schedules()
+        seed_random_appointments()
 
     st.session_state.pop("owners", None)
     st.session_state.pop("clinic", None)
