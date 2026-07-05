@@ -169,7 +169,7 @@ def render_category_header(category: str, display_name: str, icon: str, page_tit
 
 
 def render_category_filters(category: str, display_name: str, owner: Owner, title_options: list[str]):
-    """Render the filters and return the selected context plus form visibility."""
+    """Render the page filters and return whether the booking form is open."""
     if not owner.pets:
         st.warning("Add a pet before scheduling tasks here.")
         st.page_link("pages/patients.py", label="Go to Patients", icon="🧾")
@@ -178,7 +178,7 @@ def render_category_filters(category: str, display_name: str, owner: Owner, titl
         st.info(f"{display_name} isn't wired up to specific task types yet.")
         return None
 
-    toggle_key = f"show_schedule_{category}"
+    toggle_key = f"show_booking_form_{category}"
     if toggle_key not in st.session_state:
         st.session_state[toggle_key] = False
 
@@ -199,7 +199,6 @@ def render_category_filters(category: str, display_name: str, owner: Owner, titl
             "🦎 Reptiles & Amphibians": ["bearded dragon", "leopard gecko", "crested gecko", "chameleon", "iguana", "skink", "turtle", "tortoise", "corn snake", "ball python", "king snake", "frog", "toad", "newt", "salamander"],
             "🐠 Fish & Invertebrates": ["betta", "guppy", "platy", "swordtail", "molly", "tetra", "goldfish", "danio", "minnow", "cichlid", "pleco", "clownfish", "damselfish", "goby", "blenny"],
         }
-        st.subheader(f"Schedule a {display_name} Task")
         group_options = ["All Groups"] + list(pet_categories.keys())
         selected_group = st.radio("Filter by Species Group", options=group_options, horizontal=True, key=f"{category}_group_filter")
         if selected_group == "All Groups":
@@ -258,24 +257,26 @@ def render_category_filters(category: str, display_name: str, owner: Owner, titl
         )
         selected_pet_index = filtered_pets[selected_filtered_index][0]
 
-    col3, col4 = st.columns(2)
-    with col3:
-        title = st.selectbox("Task", title_options, key=f"{category}_title_select")
-    with col4:
-        reason = None
-        if category == "veterinary":
-            selected_species = selected_owner.pets[selected_pet_index].species
-            reason = render_veterinary_reason_picker(title, selected_species, key_prefix=category)
-        elif category == "special_services":
-            reason = _render_dog_cafe_menu_picker()
-        else:
-            st.text_input("Reason", value="—", disabled=True, key=f"{category}_disabled_reason")
+    return selected_owner, selected_pet_index, allowed_species, st.session_state[toggle_key]
 
-    return selected_owner, selected_pet_index, title, reason, allowed_species, st.session_state[toggle_key]
-
-
-def render_category_booking_form(category: str, display_name: str, active_staff, selected_owner, selected_pet_index, title, reason):
+def render_category_booking_form(category: str, display_name: str, active_staff, selected_owner, selected_pet_index):
     """Render the task booking form and handle task creation."""
+    title_options = CATEGORY_TASK_TITLES.get(category, [])
+    if not title_options:
+        return
+
+    if category == "veterinary":
+        title = st.selectbox("Task", title_options, key=f"{category}_title_select")
+        selected_species = selected_owner.pets[selected_pet_index].species
+        reason = render_veterinary_reason_picker(title, selected_species, key_prefix=category)
+    elif category == "special_services":
+        title = st.selectbox("Task", title_options, key=f"{category}_title_select")
+        reason = _render_dog_cafe_menu_picker()
+    else:
+        title = st.selectbox("Task", title_options, key=f"{category}_title_select")
+        st.text_input("Reason", value="—", disabled=True, key=f"{category}_disabled_reason")
+        reason = None
+
     with st.form(f"add_{category}_task_form", clear_on_submit=True):
         date_col, staff_col = st.columns(2)
         with date_col:
@@ -389,14 +390,14 @@ def render_category_page(
     if selection is None:
         return
 
-    selected_owner, selected_pet_index, title, reason, _allowed_species, show_booking_form = selection
+    selected_owner, selected_pet_index, _allowed_species, show_booking_form = selection
     if page_subtitle:
         st.subheader(page_subtitle)
 
     render_category_schedule(category, display_name, category_tasks)
     if show_booking_form:
         st.subheader(f"Schedule a {display_name} Task")
-        render_category_booking_form(category, display_name, active_staff, selected_owner, selected_pet_index, title, reason)
+        render_category_booking_form(category, display_name, active_staff, selected_owner, selected_pet_index)
 def render_placeholder_page(display_name: str, icon: str) -> None:
     st.title(f"{icon} {display_name}")
     render_live_clock(f"{display_name} placeholder")
