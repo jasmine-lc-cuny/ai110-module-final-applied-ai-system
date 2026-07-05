@@ -49,7 +49,7 @@ def ensure_demo_data() -> None:
         return
 
     if owners_missing_or_empty:
-        from seed.seed_animals_list import seed_animals_list
+        from seed.seed_animals_distribution import seed_animals_list
 
         seed_animals_list()
 

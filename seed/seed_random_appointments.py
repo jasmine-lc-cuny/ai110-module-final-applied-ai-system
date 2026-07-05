@@ -36,6 +36,10 @@ TASK_TEMPLATES = [
     ("Afternoon Walk", "walking", 30, "medium", "daily"),
     ("Brush Coat", "grooming", 20, "medium", "once"),
     ("Wash / Bath", "grooming", 30, "medium", "once"),
+    ("Day Sitting", "sitting", 60, "medium", "once"),
+    ("Overnight Sitting", "sitting", 480, "medium", "once"),
+    ("Obedience Training", "training", 45, "high", "once"),
+    ("Leash Training", "training", 45, "high", "once"),
     ("Breakfast", "special_services", 15, "medium", "daily"),
     ("Lunch", "special_services", 15, "medium", "daily"),
     ("Vet Appointment", "veterinary", 30, "high", "once"),
@@ -45,6 +49,13 @@ DOG_SERVICE_CATEGORIES = {"walking", "grooming", "training", "special_services"}
 CAT_SERVICE_CATEGORIES = {"grooming", "sitting"}
 DAY_START_MINUTES = 7 * 60
 DAY_END_MINUTES = 20 * 60
+CATEGORY_TO_SECTION = {
+    "grooming": "Grooming",
+    "sitting": "Sitting",
+    "training": "Training",
+    "walking": "Walking",
+    "special_services": "Dog Cafes",
+}
 
 
 def _round_up_to_quarter(moment: datetime) -> datetime:
@@ -90,7 +101,18 @@ def _doctor_for_species(clinic: Clinic, species: str) -> Doctor:
     return random.choice(active_doctors)
 
 
-def _seed_service_tasks(owners, anchor: datetime, *, species: str, categories: set[str]) -> int:
+def _staff_for_category(clinic: Clinic, category: str):
+    """Return an active staff member for the matching service section, if any."""
+    section = CATEGORY_TO_SECTION.get(category)
+    if not section:
+        return None
+    active_staff = [member for member in clinic.staff_in_section(section) if member.active]
+    if not active_staff:
+        active_staff = clinic.staff_in_section(section)
+    return random.choice(active_staff) if active_staff else None
+
+
+def _seed_service_tasks(owners, clinic: Clinic, anchor: datetime, *, species: str, categories: set[str]) -> int:
     seeded = 0
     for owner_index, owner in enumerate(owners):
         for pet_index, pet in enumerate(owner.pets):
@@ -103,7 +125,8 @@ def _seed_service_tasks(owners, anchor: datetime, *, species: str, categories: s
                 title, category, duration, priority, frequency = available_templates[
                     (owner_index + pet_index + task_offset) % len(available_templates)
                 ]
-                due_date = anchor.date() + timedelta(days=(owner_index + pet_index + task_offset) % 2)
+                assigned_staff = _staff_for_category(clinic, category)
+                due_date = anchor.date()
                 time_str = _time_within_window(
                     anchor,
                     offset_minutes=10 + owner_index * 6 + pet_index * 9 + task_offset * 13,
@@ -119,6 +142,7 @@ def _seed_service_tasks(owners, anchor: datetime, *, species: str, categories: s
                         due_date=due_date,
                         category=category,
                         notes=f"Seeded task near {anchor.strftime('%I:%M %p').lstrip('0')}",
+                        assignee=assigned_staff.full_name if assigned_staff else None,
                     )
                 )
                 seeded += 1
@@ -184,9 +208,9 @@ def seed_random_appointments(mode: str = "services") -> None:
     service_task_count = 0
 
     if mode in {"services", "all", "dogs"}:
-        service_task_count += _seed_service_tasks(owners, anchor, species="dog", categories=DOG_SERVICE_CATEGORIES)
+        service_task_count += _seed_service_tasks(owners, clinic, anchor, species="dog", categories=DOG_SERVICE_CATEGORIES)
     if mode in {"services", "all", "cats"}:
-        service_task_count += _seed_service_tasks(owners, anchor, species="cat", categories=CAT_SERVICE_CATEGORIES)
+        service_task_count += _seed_service_tasks(owners, clinic, anchor, species="cat", categories=CAT_SERVICE_CATEGORIES)
 
     if mode in {"all", "vet"}:
         appointment_rows = _seed_vet_appointments(owners, clinic, anchor)
