@@ -4,6 +4,7 @@ from datetime import date
 import streamlit as st
 
 from pawpal_system import APPOINTMENT_STATUSES, Appointment, Task, find_owner, format_time_12h
+from ai_system import advise_service
 from app_common import (
     APPOINTMENT_STATUS_COLORS,
     CATEGORY_TASK_TITLES,
@@ -73,6 +74,9 @@ def book_appointment_dialog(owners, clinic) -> None:
         "Task", VISIT_REASON_TITLES, key="book_appt_vet_title_select", label_visibility="collapsed"
     )
     selected_species = patient_pairs[patient_index][1].species
+    appt_advice = advise_service("veterinary", selected_species, VISIT_REASON_TITLES)
+    if appt_advice is not None:
+        st.info(f"AI suggestion: {appt_advice.explanation}")
     if visit_title == "Other (custom)":
         custom_reason = st.text_area("Custom reason", key="book_appt_vet_custom_reason")
         visit_reason = None

@@ -1,0 +1,44 @@
+# Model Card: PawPal+ Applied AI System
+
+## Model Name
+
+PawPal+ Applied AI System
+
+## Intended Use
+
+PawPal+ is a classroom portfolio project that combines a pet-care scheduler with a local retrieval-backed advice layer. It is intended to demonstrate an applied AI system that uses retrieval-augmented guidance, confidence scoring, logging, and guardrails.
+
+## How The System Works
+
+The base app manages pets, tasks, recurring routines, and conflict warnings. The applied AI layer retrieves guidance from a local corpus before making booking suggestions, then returns a recommendation, a short explanation, and a confidence score. The app uses that advice to preselect task options and show users why the choice was suggested.
+
+## Data
+
+The retrieval corpus is intentionally small and local. It contains service guidance for grooming, sitting, training, walking, dog cafe, and veterinary scenarios. That makes the system easy to inspect and reproduce, but it also limits coverage.
+
+## Limitations and Biases
+
+The advice layer uses simple keyword-style retrieval, so it can miss unusual phrasing or synonyms. The guidance is generic and cannot replace professional veterinary judgment or user-specific context. Because the corpus is handcrafted, the output can reflect the assumptions and priorities of the project author.
+
+## Possible Misuse and Prevention
+
+The app could be misused if someone treated the advice as medical certainty or as a substitute for professional care. To reduce that risk, the system keeps the advice narrow, shows guardrail text, and preserves the user as the final decision-maker.
+
+## Reliability Testing
+
+I tested the system with both the PawPal backend tests and an applied-AI evaluation script. The tests check the original scheduling features as well as whether the AI retrieval layer loads and affects the UI flow. Logging writes each advice run to JSONL so the behavior can be inspected later.
+
+## AI Collaboration Reflection
+
+I collaborated with OpenAI Codex while building this project. A helpful suggestion from Codex was to keep the AI layer local and deterministic so the project would stay reproducible and easy to grade. That made the final much easier to explain and verify.
+
+One flawed suggestion was to rely on a standalone helper script rather than wiring the advice into the live booking flow. I corrected that by connecting the retrieval-backed guidance to the service pages and appointment dialog so the AI actually changes the user experience.
+
+I also used Codex to help tighten the README, the architecture diagram, the evaluation notes, and the code comments so the repo reads like a polished portfolio project.
+
+## Future Work
+
+- Expand the retrieval corpus.
+- Add semantic matching instead of simple keyword retrieval.
+- Add more nuanced confidence scoring.
+- Log user feedback on whether the advice was helpful.

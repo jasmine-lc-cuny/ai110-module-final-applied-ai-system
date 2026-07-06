@@ -1,0 +1,12 @@
+flowchart TD
+    A["User request in Streamlit"] --> B["PawPal service or appointment form"]
+    B --> C["Local retrieval advice"]
+    C --> D["Task suggestion and guardrail text"]
+    D --> E["Planner / booking form defaults"]
+    E --> F["Task or appointment creation"]
+    F --> G["JSON persistence"]
+    D --> H["Advice log JSONL"]
+    H --> I["Evaluation script"]
+    F --> J["Original scheduling engine"]
+    J --> K["Conflict checks and recurring tasks"]
+    K --> L["UI tables and schedule pages"]

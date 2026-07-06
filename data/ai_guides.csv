@@ -1,0 +1,7 @@
+category,species,keywords,recommended_titles,summary,guardrail
+grooming,all,groom;coat;clean;brush,"Brush Coat|Wash / Bath|Trim Nails","For grooming, start with the lowest-stress coat and hygiene tasks.","Avoid piling on too many grooming tasks in one session."
+sitting,all,sit;house;stay;overnight,"Day Sitting|Drop-In Visit|House Sitting","For sitting, match the task to the length of the visit.","Choose only one sitting task at a time."
+training,dog,train;obedience;leash;behavior,"Obedience Training|Leash Training|Trick Training","For training, start with a simple obedience goal.","Keep training short and reward-based."
+walking,dog,walk;exercise;play;outdoor,"Morning Walk|Afternoon Walk|Evening Walk","For walking, begin with the next practical walk window.","Do not overbook back-to-back walk tasks."
+special_services,dog,meal;breakfast;lunch;dinner,"Breakfast|Lunch|Dinner","For the Dog Cafe section, meal choices are the main action.","Keep cafe bookings to one meal slot."
+veterinary,all,vet;medical;exam;checkup,"Vet Appointment|Give Medication|Injection Medication","For veterinary visits, choose the medical task that matches the concern.","Always use the owner-provided reason and avoid inventing treatment details."

@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 
+from ai_system import advise_service
 from pawpal_system import (
     Appointment,
     Clinic,
@@ -477,6 +478,23 @@ def test_pet_from_dict_defaults_blood_type_to_none_for_old_data_without_it():
     pet = Pet.from_dict(old_style_data)
 
     assert pet.blood_type is None
+
+
+def test_ai_advice_prefers_grooming_defaults_for_cats():
+    advice = advise_service("grooming", "cat", ["Brush Coat", "Wash / Bath", "Trim Nails"])
+
+    assert advice is not None
+    assert advice.guide.category == "grooming"
+    assert "coat" in advice.explanation.lower()
+    assert "brush coat" in [title.lower() for title in advice.guide.recommended_titles]
+
+
+def test_ai_advice_prefers_veterinary_defaults_for_dogs():
+    advice = advise_service("veterinary", "dog", ["Annual checkup", "Vaccination", "Other (custom)"])
+
+    assert advice is not None
+    assert advice.guide.category == "veterinary"
+    assert advice.confidence >= 0.55
 
 
 def test_pet_round_trips_profile_fields():

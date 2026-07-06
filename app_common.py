@@ -39,6 +39,7 @@ from pawpal_system import (
     priority_icon,
     task_type_icon,
 )
+from ai_system import advise_service
 from state import (
     ensure_demo_data,
     get_clinic,
@@ -272,9 +273,17 @@ def render_category_booking_form(category: str, display_name: str, active_staff,
     if not title_options:
         return
 
+    selected_pet = selected_owner.pets[selected_pet_index]
+    advice = advise_service(category, selected_pet.species, title_options)
+    if advice is not None:
+        st.info(f"AI suggestion: {advice.explanation}")
+        default_titles = advice.guide.recommended_titles
+    else:
+        default_titles = _default_task_selection(category, title_options)
+
     if category == "veterinary":
         selected_titles = [st.selectbox("Task", title_options, key=f"{category}_title_select")]
-        selected_species = selected_owner.pets[selected_pet_index].species
+        selected_species = selected_pet.species
         reason = render_veterinary_reason_picker(selected_titles[0], selected_species, key_prefix=category)
     elif category == "special_services":
         selected_titles = [st.selectbox("Task", title_options, key=f"{category}_title_select")]
@@ -283,7 +292,7 @@ def render_category_booking_form(category: str, display_name: str, active_staff,
         selected_titles = st.multiselect(
             "Task(s)",
             title_options,
-            default=_default_task_selection(category, title_options),
+            default=[title for title in default_titles if title in title_options] or title_options[:1],
             key=f"{category}_title_select",
         )
         st.text_input("Reason", value="—", disabled=True, key=f"{category}_disabled_reason")
@@ -330,7 +339,6 @@ def render_category_booking_form(category: str, display_name: str, active_staff,
         if period == "PM":
             hour_24 += 12
         time_str = f"{hour_24:02d}:{minute}"
-        selected_pet = selected_owner.pets[selected_pet_index]
         assignee = active_staff[staff_index].full_name if staff_index is not None else None
         conflict = any(t.time == time_str and t.due_date == appt_date and not t.completed for t in selected_pet.tasks)
         if conflict:
