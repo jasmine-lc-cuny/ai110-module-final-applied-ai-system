@@ -1,5 +1,7 @@
 # PawPal+ Project Reflection
 
+> **Note:** This reflection is carried over from the original Module 2 submission (the base pet-care scheduler, before the final-project RAG extension). It's kept for history. The graded reflection for *this* final applied-AI project — biases, misuse, testing surprises, and AI-collaboration examples — lives in [`model_card.md`](model_card.md).
+
 ## 1. System Design
 
 **a. Initial design**

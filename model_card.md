@@ -28,6 +28,10 @@ The app could be misused if someone treated the advice as medical certainty or a
 
 I tested the system with both the PawPal backend tests and an applied-AI evaluation script. The tests check the original scheduling features as well as whether the AI retrieval layer loads and affects the UI flow. Logging writes each advice run to JSONL so the behavior can be inspected later.
 
+## What Surprised Me
+
+I expected the keyword-scoring retrieval to need tie-breaking logic for edge cases, but in practice the category-match weight (2.0) dominates enough that species and keyword overlap rarely change the winning guide — every test case so far resolves to the same confidence (0.95) because the corpus is small and each category has exactly one dominant guide. That was a useful surprise: it means the current scoring formula is more brittle than it looks, and a larger or more overlapping corpus would likely need a real tie-breaker instead of just "highest score wins."
+
 ## AI Collaboration Reflection
 
 I collaborated with OpenAI Codex while building this project. A helpful suggestion from Codex was to keep the AI layer local and deterministic so the project would stay reproducible and easy to grade. That made the final much easier to explain and verify.

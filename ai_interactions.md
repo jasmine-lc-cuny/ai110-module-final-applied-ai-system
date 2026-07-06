@@ -1,5 +1,7 @@
 # AI Interactions Log
 
+> **Note:** This log documents AI collaboration on the original Module 2 build (the scheduling backend, before the final-project RAG extension) — it predates and does not cover the retrieval-advice layer (`ai_system.py`) added for this final project. It is not a submission for the "Agentic Workflow Enhancement" stretch, which would require intermediate reasoning traces from this project's own work.
+
 ## Agent Workflow
 
 This project used two different AI coding assistants for two different jobs: Codex built the initial skeleton and backend, and Claude Code (used in the follow-up session covering this log) audited that work against the assignment, fixed what was actually broken, and completed the optional challenges. Codex was then brought back in for one narrow, specific job: acting as the second model in the Challenge 5 comparison below.
