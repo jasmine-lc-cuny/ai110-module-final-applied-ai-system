@@ -1,27 +1,112 @@
 """Master seeder for the PawPal+ clinic.
 
-Builds the full dog-and-cat clinic roster in one pass. Each run rebuilds
-data.json from scratch.
+Builds one patient per breed from a comprehensive dog- and cat-breed list
+(117 dog breeds across Companion & Toy, Sporting & Hound, Working & Herding,
+and Terrier & Non-Sporting groups; 61 cat breeds across Shorthair &
+Traditional, Longhair & Fluffy, and Unique Mutations groups) — every breed
+appears exactly once, each with a unique owner name and a unique pet name.
+Each run rebuilds data.json from scratch.
 
-Medical data (breed chronic conditions and genetic-risk markers) was verified
-against veterinary references — VCA Animal Hospitals, the Merck Veterinary
-Manual, PetMD, and breed health surveys — rather than generated freehand. Key
-corrections captured: Siberian Huskies are low-risk for hip dysplasia (their
-real hereditary risks are eye conditions); Scottish Folds always carry
-osteochondrodysplasia (it's the fold gene itself). Senior-onset conditions
-(e.g., feline kidney disease) are age-gated.
+Medical data (breed chronic conditions and hereditary risk markers) reflects
+well-documented breed tendencies where known (e.g. hip dysplasia in large
+working breeds, HCM in Maine Coons/Ragdolls/British Shorthairs, the
+osteochondrodysplasia every fold-eared cat carries). For breeds without a
+well-established, specific inherited condition, the risk list is left empty
+rather than inventing one — "Hereditary risk: none identified" is a
+legitimate, honest answer, not a placeholder.
 """
 
 import random
 import sys
 
 from pawpal_system import Owner, Pet, save_owners_to_json
-from seed.seed_dog_and_cat import DOG_AND_CAT_SPECIES
 
 DATA_PATH = "data.json"
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
+
+# ---------------------------------------------------------------------------
+# Breed lists — one patient will be seeded per breed, in this order (shuffled
+# only for owner/pet name pairing, not for breed selection).
+# ---------------------------------------------------------------------------
+
+DOG_BREEDS_COMPANION_TOY = [
+    "Affenpinscher", "Biewer Terrier", "Bolognese", "Brussels Griffon",
+    "Cavalier King Charles Spaniel", "Chihuahua", "Chinese Crested",
+    "English Toy Spaniel", "French Bulldog", "Havanese", "Italian Greyhound",
+    "Japanese Chin", "Maltese", "Miniature Pinscher", "Papillon", "Pekingese",
+    "Pomeranian", "Pug", "Russian Tsvetnaya Bolonka", "Shih Tzu", "Toy Poodle",
+    "Yorkshire Terrier",
+]
+DOG_BREEDS_SPORTING_HOUND = [
+    "Afghan Hound", "American Water Spaniel", "Basenji",
+    "Basset Fauve de Bretagne", "Basset Hound", "Beagle",
+    "Black and Tan Coonhound", "Bloodhound", "Borzoi", "Boykin Spaniel",
+    "Brittany", "Chesapeake Bay Retriever", "Cocker Spaniel", "Dachshund",
+    "English Cocker Spaniel", "English Setter", "English Springer Spaniel",
+    "German Shorthaired Pointer", "Golden Retriever", "Greyhound", "Harrier",
+    "Irish Setter", "Irish Wolfhound", "Labrador Retriever",
+    "Nova Scotia Duck Tolling Retriever", "Plott Hound", "Pointer",
+    "Rhodesian Ridgeback", "Saluki", "Vizsla", "Weimaraner", "Whippet",
+]
+DOG_BREEDS_WORKING_HERDING = [
+    "Akita", "Alaskan Malamute", "Anatolian Shepherd Dog",
+    "Australian Cattle Dog", "Australian Shepherd", "Bearded Collie",
+    "Belgian Malinois", "Belgian Sheepdog", "Bernese Mountain Dog",
+    "Black Russian Terrier", "Boerboel", "Border Collie",
+    "Bouvier des Flandres", "Boxer", "Bullmastiff", "Cardigan Welsh Corgi",
+    "Cane Corso", "Collie", "Doberman Pinscher", "Dogue de Bordeaux",
+    "German Shepherd Dog", "Great Dane", "Great Pyrenees",
+    "Greater Swiss Mountain Dog", "Komondor", "Kuvasz", "Mastiff",
+    "Newfoundland", "Pembroke Welsh Corgi", "Portuguese Water Dog",
+    "Rottweiler", "Saint Bernard", "Samoyed", "Siberian Husky",
+    "Standard Schnauzer",
+]
+DOG_BREEDS_TERRIER_NONSPORTING = [
+    "Airedale Terrier", "American Hairless Terrier",
+    "American Staffordshire Terrier", "Bedlington Terrier", "Bichon Frise",
+    "Boston Terrier", "Bull Terrier", "Cairn Terrier", "Chow Chow",
+    "Dalmatian", "Finnish Spitz", "Irish Terrier", "Keeshond", "Lhasa Apso",
+    "Miniature Schnauzer", "Norwich Terrier", "Poodle", "Rat Terrier",
+    "Russell Terrier", "Schipperke", "Scottish Terrier", "Shar-Pei",
+    "Shiba Inu", "Soft Coated Wheaten Terrier", "Staffordshire Bull Terrier",
+    "Teddy Roosevelt Terrier", "Tibetan Terrier", "West Highland White Terrier",
+]
+
+SEEDED_DOG_BREEDS = (
+    DOG_BREEDS_COMPANION_TOY
+    + DOG_BREEDS_SPORTING_HOUND
+    + DOG_BREEDS_WORKING_HERDING
+    + DOG_BREEDS_TERRIER_NONSPORTING
+)
+
+CAT_BREEDS_SHORTHAIR_TRADITIONAL = [
+    "Abyssinian", "American Shorthair", "American Wirehair", "Australian Mist",
+    "Bombay", "British Shorthair", "Burmese", "Burmilla", "Chartreux",
+    "Colorpoint Shorthair", "Egyptian Mau", "European Burmese",
+    "Exotic Shorthair", "Havana Brown", "Korat", "Ocicat", "Oriental Shorthair",
+    "Russian Blue", "Siamese", "Singapura", "Snowshoe", "Thai", "Tonkinese",
+]
+CAT_BREEDS_LONGHAIR_FLUFFY = [
+    "Balinese", "Birman", "British Longhair", "Himalayan", "Javanese",
+    "Maine Coon", "Norwegian Forest Cat", "Persian", "Ragamuffin", "Ragdoll",
+    "Scottish Fold Longhair", "Siberian", "Somali", "Turkish Angora",
+    "Turkish Van",
+]
+CAT_BREEDS_UNIQUE_MUTATIONS = [
+    "American Bobtail", "American Curl", "Bambino", "Bengal", "Chausie",
+    "Cornish Rex", "Cymric", "Devon Rex", "Donskoy", "Highlander",
+    "Japanese Bobtail", "Kurilian Bobtail", "LaPerm", "Lykoi", "Manx",
+    "Munchkin", "Peterbald", "Pixiebob", "Savannah", "Scottish Fold",
+    "Selkirk Rex", "Sphynx", "Toyger",
+]
+
+SEEDED_CAT_BREEDS = (
+    CAT_BREEDS_SHORTHAIR_TRADITIONAL
+    + CAT_BREEDS_LONGHAIR_FLUFFY
+    + CAT_BREEDS_UNIQUE_MUTATIONS
+)
 
 OWNER_NAMES = [
     "James Smith", "Mary Johnson", "Robert Williams", "Patricia Brown", "John Jones",
@@ -58,6 +143,12 @@ OWNER_NAMES = [
     "Quentin Tarantino", "Christopher Nolan", "James Cameron", "Peter Jackson", "Ridley Scott",
     "John Williams", "Hans Zimmer", "Ennio Morricone", "Danny Elfman", "Howard Shore",
     "George R.R. Martin", "Isaac Asimov", "Arthur C. Clarke", "Philip K. Dick", "Frank Herbert",
+    "Nina Blackwood", "Derek Sandoval", "Priya Chandra", "Oscar Delacroix", "Wanda Kim",
+    "Felix Okoro", "Greta Lindholm", "Marcus Aurelius Cole", "Yara Petrov", "Django Vance",
+    "Selma Ortiz", "Tobias Renner", "Junie Prescott", "Rafael Castellano", "Ingrid Solheim",
+    "Cormac Fitzgerald", "Aiko Tanaka", "Baxter Winslow", "Delia Marchetti", "Ezra Whitfield",
+    "Fiona Blackthorn", "Gideon Marsh", "Hazel Winters", "Ignatius Boone", "Josephine Delarosa",
+    "Kenji Watanabe", "Lucinda Faraday", "Milo Abernathy", "Nadia Kowalski", "Otis Brennan",
 ]
 
 PET_NAMES = [
@@ -81,27 +172,93 @@ PET_NAMES = [
     "Boomer", "Bruce", "Frankie", "Ghost", "Gunner",
     "Hunter", "Jack", "Kobe", "Moose", "Rex",
     "Rocco", "Sam", "Ziggy", "Mango", "Kiwi",
+    "Biscuit", "Waffles", "Pancake", "Noodle", "Pretzel",
+    "Bagel", "Muffin", "Cupcake", "Brownie", "Cinnamon",
+    "Nutmeg", "Ginger", "Clover", "Maple", "Acorn",
+    "Pebbles", "Boulder", "Storm", "Blaze", "Ember",
+    "Comet", "Rocket", "Nova", "Orbit", "Pixel",
+    "Bolt", "Turbo", "Zippy", "Doodle", "Sprinkle",
+    "Marble", "Domino", "Checkers", "Patches", "Freckles",
+    "Speckles", "Dot", "Squiggle", "Wiggles", "Bounce",
+    "Hopper", "Skipper", "Anchor", "Compass", "Pilot",
+    "Captain", "Admiral", "Sailor", "Voyager", "Journey",
+    "Quest", "Ranger", "Trapper", "Tracker", "Blazer",
+    "Rustler", "Maverick", "Buckaroo", "Cowboy", "Sundance",
+    "Outlaw", "Renegade", "Justice", "Liberty", "Patriot",
+    "Eagle", "Falcon", "Hawk", "Raven", "Phoenix",
+    "Griffin", "Talon", "Thunder", "Lightning", "Cyclone",
+    "Tornado", "Blizzard", "Frost", "Crystal", "Diamond",
+    "Pearl", "Opal", "Jade", "Amber", "Sapphire",
+    "Emerald", "Topaz", "Onyx", "Ebony", "Ivory",
 ]
 
-SPECIES = DOG_AND_CAT_SPECIES
-
 # Breed -> realistic weight range in lbs (upper bounds allow a chunky pet).
-# Dogs and cats get their weight rolled from their breed's range, so a
-# Chihuahua never outweighs a Great Dane.
 DOG_BREEDS = {
-    "Labrador Retriever": (55, 90), "German Shepherd": (50, 95), "Golden Retriever": (55, 80),
-    "French Bulldog": (16, 30), "Bulldog": (40, 55), "Poodle": (40, 70),
-    "Beagle": (18, 35), "Rottweiler": (80, 135), "Dachshund": (11, 32),
-    "Yorkshire Terrier": (4, 10), "Chihuahua": (3, 9), "Great Dane": (110, 175),
-    "Shih Tzu": (9, 18), "Siberian Husky": (35, 60), "Boxer": (55, 80),
-    "Pembroke Welsh Corgi": (22, 33), "Border Collie": (30, 55), "Australian Shepherd": (40, 65),
-    "Pit Bull Terrier": (30, 65), "Mixed Breed": (15, 90),
+    "Affenpinscher": (7, 10), "Biewer Terrier": (4, 8), "Bolognese": (5, 9),
+    "Brussels Griffon": (6, 12), "Cavalier King Charles Spaniel": (13, 18),
+    "Chihuahua": (3, 9), "Chinese Crested": (5, 12), "English Toy Spaniel": (8, 14),
+    "French Bulldog": (16, 30), "Havanese": (7, 13), "Italian Greyhound": (7, 14),
+    "Japanese Chin": (7, 11), "Maltese": (4, 7), "Miniature Pinscher": (8, 11),
+    "Papillon": (5, 10), "Pekingese": (7, 14), "Pomeranian": (3, 7),
+    "Pug": (14, 18), "Russian Tsvetnaya Bolonka": (4, 11), "Shih Tzu": (9, 18),
+    "Toy Poodle": (4, 6), "Yorkshire Terrier": (4, 10),
+    "Afghan Hound": (50, 60), "American Water Spaniel": (25, 45), "Basenji": (20, 25),
+    "Basset Fauve de Bretagne": (25, 35), "Basset Hound": (40, 65), "Beagle": (18, 35),
+    "Black and Tan Coonhound": (40, 75), "Bloodhound": (80, 110), "Borzoi": (55, 105),
+    "Boykin Spaniel": (25, 40), "Brittany": (30, 40), "Chesapeake Bay Retriever": (55, 80),
+    "Cocker Spaniel": (20, 30), "Dachshund": (11, 32), "English Cocker Spaniel": (26, 34),
+    "English Setter": (45, 80), "English Springer Spaniel": (40, 50),
+    "German Shorthaired Pointer": (45, 70), "Golden Retriever": (55, 80), "Greyhound": (60, 88),
+    "Harrier": (45, 60), "Irish Setter": (60, 70), "Irish Wolfhound": (105, 180),
+    "Labrador Retriever": (55, 90), "Nova Scotia Duck Tolling Retriever": (35, 50),
+    "Plott Hound": (40, 60), "Pointer": (45, 75), "Rhodesian Ridgeback": (70, 85),
+    "Saluki": (35, 65), "Vizsla": (45, 65), "Weimaraner": (55, 90), "Whippet": (25, 40),
+    "Akita": (70, 130), "Alaskan Malamute": (75, 85), "Anatolian Shepherd Dog": (80, 150),
+    "Australian Cattle Dog": (30, 50), "Australian Shepherd": (40, 65),
+    "Bearded Collie": (45, 55), "Belgian Malinois": (40, 80), "Belgian Sheepdog": (45, 75),
+    "Bernese Mountain Dog": (70, 115), "Black Russian Terrier": (80, 140),
+    "Boerboel": (150, 200), "Border Collie": (30, 55), "Bouvier des Flandres": (60, 90),
+    "Boxer": (55, 80), "Bullmastiff": (100, 130), "Cardigan Welsh Corgi": (25, 38),
+    "Cane Corso": (90, 120), "Collie": (50, 75), "Doberman Pinscher": (60, 100),
+    "Dogue de Bordeaux": (99, 110), "German Shepherd Dog": (50, 95), "Great Dane": (110, 175),
+    "Great Pyrenees": (85, 100), "Greater Swiss Mountain Dog": (85, 140),
+    "Komondor": (80, 100), "Kuvasz": (70, 115), "Mastiff": (120, 230),
+    "Newfoundland": (100, 150), "Pembroke Welsh Corgi": (22, 33),
+    "Portuguese Water Dog": (35, 60), "Rottweiler": (80, 135), "Saint Bernard": (120, 180),
+    "Samoyed": (35, 65), "Siberian Husky": (35, 60), "Standard Schnauzer": (30, 50),
+    "Airedale Terrier": (40, 65), "American Hairless Terrier": (12, 16),
+    "American Staffordshire Terrier": (40, 70), "Bedlington Terrier": (17, 23),
+    "Bichon Frise": (12, 18), "Boston Terrier": (12, 25), "Bull Terrier": (50, 70),
+    "Cairn Terrier": (13, 18), "Chow Chow": (45, 70), "Dalmatian": (45, 70),
+    "Finnish Spitz": (20, 33), "Irish Terrier": (25, 27), "Keeshond": (35, 45),
+    "Lhasa Apso": (12, 18), "Miniature Schnauzer": (11, 20), "Norwich Terrier": (11, 12),
+    "Poodle": (40, 70), "Rat Terrier": (10, 25), "Russell Terrier": (9, 15),
+    "Schipperke": (10, 16), "Scottish Terrier": (18, 22), "Shar-Pei": (45, 60),
+    "Shiba Inu": (17, 23), "Soft Coated Wheaten Terrier": (30, 40),
+    "Staffordshire Bull Terrier": (24, 38), "Teddy Roosevelt Terrier": (8, 25),
+    "Tibetan Terrier": (18, 30), "West Highland White Terrier": (15, 20),
 }
 CAT_BREEDS = {
-    "Domestic Shorthair": (8, 18), "Domestic Longhair": (8, 18), "Maine Coon": (10, 25),
-    "Siamese": (6, 14), "Persian": (7, 15), "Ragdoll": (10, 20),
-    "Bengal": (8, 16), "Sphynx": (6, 14), "British Shorthair": (7, 17),
-    "Russian Blue": (7, 15), "Scottish Fold": (6, 13), "Norwegian Forest Cat": (9, 20),
+    "Abyssinian": (8, 12), "American Shorthair": (8, 15), "American Wirehair": (8, 15),
+    "Australian Mist": (8, 13), "Bombay": (8, 15), "British Shorthair": (7, 17),
+    "Burmese": (8, 12), "Burmilla": (7, 12), "Chartreux": (7, 16),
+    "Colorpoint Shorthair": (6, 10), "Egyptian Mau": (7, 11), "European Burmese": (8, 12),
+    "Exotic Shorthair": (7, 14), "Havana Brown": (8, 11), "Korat": (6, 10),
+    "Ocicat": (8, 15), "Oriental Shorthair": (6, 10), "Russian Blue": (7, 15),
+    "Siamese": (6, 14), "Singapura": (4, 8), "Snowshoe": (7, 12), "Thai": (8, 12),
+    "Tonkinese": (6, 12),
+    "Balinese": (6, 11), "Birman": (8, 12), "British Longhair": (9, 18),
+    "Himalayan": (7, 12), "Javanese": (6, 10), "Maine Coon": (10, 25),
+    "Norwegian Forest Cat": (9, 20), "Persian": (7, 15), "Ragamuffin": (10, 20),
+    "Ragdoll": (10, 20), "Scottish Fold Longhair": (6, 13), "Siberian": (10, 20),
+    "Somali": (6, 10), "Turkish Angora": (5, 10), "Turkish Van": (9, 20),
+    "American Bobtail": (7, 16), "American Curl": (5, 10), "Bambino": (4, 9),
+    "Bengal": (8, 16), "Chausie": (12, 25), "Cornish Rex": (6, 10), "Cymric": (8, 12),
+    "Devon Rex": (6, 9), "Donskoy": (6, 12), "Highlander": (10, 20),
+    "Japanese Bobtail": (6, 10), "Kurilian Bobtail": (8, 15), "LaPerm": (6, 10),
+    "Lykoi": (5, 8), "Manx": (8, 12), "Munchkin": (5, 9), "Peterbald": (6, 10),
+    "Pixiebob": (8, 17), "Savannah": (12, 25), "Scottish Fold": (6, 13),
+    "Selkirk Rex": (7, 16), "Sphynx": (6, 14), "Toyger": (7, 15),
 }
 
 # Common real-world dog/cat allergies (food and environmental).
@@ -111,12 +268,12 @@ DOG_CAT_ALLERGIES = [
 ]
 
 # ---------------------------------------------------------------------------
-# Medical data (verified against veterinary sources — see module docstring).
-#
-# Two ideas are kept distinct:
-#   * chronic       - conditions a pet can actually be *diagnosed* with.
-#   * risk (marker) - a predisposition the pet does NOT have (hereditary,
-#     breed-linked).
+# Medical data. Two ideas are kept distinct:
+#   * chronic  - conditions a pet can actually be *diagnosed* with (shared
+#     across all dogs / all cats — not breed-specific).
+#   * risk     - a breed-linked hereditary predisposition the pet does NOT
+#     have. An empty list means no well-established, breed-specific inherited
+#     condition is claimed for that breed.
 # ---------------------------------------------------------------------------
 
 CONDITION_NOTES = [
@@ -136,51 +293,192 @@ DOG_CHRONIC = ["Osteoarthritis", "Allergic Dermatitis (Atopy)", "Diabetes Mellit
 CAT_CHRONIC = ["Chronic Kidney Disease", "Hyperthyroidism", "Diabetes Mellitus",
                "Feline Asthma", "Dental Disease", "Inflammatory Bowel Disease"]
 
-# Breed -> inherited conditions the breed is predisposed to (used as "at risk,
-# not present" markers). Empty list = mixed ancestry -> "none identified".
 DOG_BREED_RISKS = {
-    "Labrador Retriever": ["Hip Dysplasia", "Progressive Retinal Atrophy"],
-    "German Shepherd": ["Hip Dysplasia", "Degenerative Myelopathy"],
-    "Golden Retriever": ["Hip Dysplasia", "Subvalvular Aortic Stenosis"],
-    "French Bulldog": ["Brachycephalic Airway Syndrome", "Intervertebral Disc Disease"],
-    "Bulldog": ["Brachycephalic Airway Syndrome", "Skin Fold Dermatitis"],
-    "Poodle": ["Addison's Disease", "Progressive Retinal Atrophy"],
-    "Beagle": ["Epilepsy", "Hypothyroidism"],
-    "Rottweiler": ["Osteosarcoma", "Hip Dysplasia"],
-    "Dachshund": ["Intervertebral Disc Disease", "Luxating Patella"],
-    "Yorkshire Terrier": ["Tracheal Collapse", "Luxating Patella"],
+    "Affenpinscher": ["Patellar Luxation", "Legg-Calve-Perthes Disease"],
+    "Biewer Terrier": ["Patellar Luxation", "Dental Disease"],
+    "Bolognese": ["Patellar Luxation", "Dental Disease"],
+    "Brussels Griffon": ["Patellar Luxation", "Brachycephalic Airway Syndrome"],
+    "Cavalier King Charles Spaniel": ["Mitral Valve Disease", "Syringomyelia"],
     "Chihuahua": ["Luxating Patella", "Mitral Valve Disease"],
-    "Great Dane": ["Bloat (GDV)", "Dilated Cardiomyopathy"],
+    "Chinese Crested": ["Patellar Luxation", "Progressive Retinal Atrophy"],
+    "English Toy Spaniel": ["Mitral Valve Disease", "Patellar Luxation"],
+    "French Bulldog": ["Brachycephalic Airway Syndrome", "Intervertebral Disc Disease"],
+    "Havanese": ["Patellar Luxation", "Legg-Calve-Perthes Disease"],
+    "Italian Greyhound": ["Patellar Luxation", "Progressive Retinal Atrophy"],
+    "Japanese Chin": ["Patellar Luxation", "Brachycephalic Airway Syndrome"],
+    "Maltese": ["Patellar Luxation", "Portosystemic Shunt"],
+    "Miniature Pinscher": ["Patellar Luxation", "Legg-Calve-Perthes Disease"],
+    "Papillon": ["Patellar Luxation", "Progressive Retinal Atrophy"],
+    "Pekingese": ["Brachycephalic Airway Syndrome", "Intervertebral Disc Disease"],
+    "Pomeranian": ["Patellar Luxation", "Tracheal Collapse"],
+    "Pug": ["Brachycephalic Airway Syndrome", "Hemivertebrae"],
+    "Russian Tsvetnaya Bolonka": ["Patellar Luxation", "Dental Disease"],
     "Shih Tzu": ["Brachycephalic Airway Syndrome", "Dry Eye (KCS)"],
-    # Huskies are one of the LOWEST hip-dysplasia breeds; their real hereditary
-    # risks are eye conditions (cataracts ~8%, corneal dystrophy ~3%).
-    "Siberian Husky": ["Hereditary Cataracts", "Corneal Dystrophy"],
-    "Boxer": ["Boxer Cardiomyopathy (ARVC)", "Mast Cell Tumors"],
-    "Pembroke Welsh Corgi": ["Degenerative Myelopathy", "Intervertebral Disc Disease"],
-    "Border Collie": ["Collie Eye Anomaly", "Epilepsy"],
+    "Toy Poodle": ["Patellar Luxation", "Progressive Retinal Atrophy"],
+    "Yorkshire Terrier": ["Tracheal Collapse", "Luxating Patella"],
+    "Afghan Hound": ["Hypothyroidism", "Cataracts"],
+    "American Water Spaniel": ["Hip Dysplasia", "Chronic Otitis"],
+    "Basenji": ["Fanconi Syndrome", "Progressive Retinal Atrophy"],
+    "Basset Fauve de Bretagne": ["Chronic Otitis", "Intervertebral Disc Disease"],
+    "Basset Hound": ["Intervertebral Disc Disease", "Chronic Otitis"],
+    "Beagle": ["Epilepsy", "Hypothyroidism"],
+    "Black and Tan Coonhound": ["Hip Dysplasia", "Chronic Otitis"],
+    "Bloodhound": ["Bloat (GDV)", "Chronic Otitis"],
+    "Borzoi": ["Bloat (GDV)", "Cardiomyopathy"],
+    "Boykin Spaniel": ["Hip Dysplasia", "Progressive Retinal Atrophy"],
+    "Brittany": ["Hip Dysplasia", "Epilepsy"],
+    "Chesapeake Bay Retriever": ["Hip Dysplasia", "Progressive Retinal Atrophy"],
+    "Cocker Spaniel": ["Progressive Retinal Atrophy", "Chronic Otitis"],
+    "Dachshund": ["Intervertebral Disc Disease", "Luxating Patella"],
+    "English Cocker Spaniel": ["Progressive Retinal Atrophy", "Chronic Otitis"],
+    "English Setter": ["Hip Dysplasia", "Deafness"],
+    "English Springer Spaniel": ["Hip Dysplasia", "Progressive Retinal Atrophy"],
+    "German Shorthaired Pointer": ["Hip Dysplasia", "Bloat (GDV)"],
+    "Golden Retriever": ["Hip Dysplasia", "Subvalvular Aortic Stenosis"],
+    "Greyhound": ["Bloat (GDV)", "Cardiomyopathy"],
+    "Harrier": ["Hip Dysplasia", "Chronic Otitis"],
+    "Irish Setter": ["Hip Dysplasia", "Bloat (GDV)"],
+    "Irish Wolfhound": ["Bloat (GDV)", "Dilated Cardiomyopathy"],
+    "Labrador Retriever": ["Hip Dysplasia", "Progressive Retinal Atrophy"],
+    "Nova Scotia Duck Tolling Retriever": ["Hip Dysplasia", "Progressive Retinal Atrophy"],
+    "Plott Hound": ["Hip Dysplasia", "Chronic Otitis"],
+    "Pointer": ["Hip Dysplasia", "Epilepsy"],
+    "Rhodesian Ridgeback": ["Dermoid Sinus", "Hip Dysplasia"],
+    "Saluki": ["Cardiomyopathy", "Hyperthyroidism"],
+    "Vizsla": ["Hip Dysplasia", "Epilepsy"],
+    "Weimaraner": ["Bloat (GDV)", "Hip Dysplasia"],
+    "Whippet": ["Cardiomyopathy", "Progressive Retinal Atrophy"],
+    "Akita": ["Hip Dysplasia", "Hypothyroidism"],
+    "Alaskan Malamute": ["Hip Dysplasia", "Chondrodysplasia"],
+    "Anatolian Shepherd Dog": ["Hip Dysplasia", "Entropion"],
+    "Australian Cattle Dog": ["Progressive Retinal Atrophy", "Deafness"],
     "Australian Shepherd": ["MDR1 Drug Sensitivity", "Collie Eye Anomaly"],
-    "Pit Bull Terrier": ["Hip Dysplasia", "Demodectic Mange"],
-    "Mixed Breed": [],
+    "Bearded Collie": ["Hip Dysplasia", "Progressive Retinal Atrophy"],
+    "Belgian Malinois": ["Hip Dysplasia", "Epilepsy"],
+    "Belgian Sheepdog": ["Hip Dysplasia", "Epilepsy"],
+    "Bernese Mountain Dog": ["Hip Dysplasia", "Histiocytic Sarcoma"],
+    "Black Russian Terrier": ["Hip Dysplasia", "Progressive Retinal Atrophy"],
+    "Boerboel": ["Hip Dysplasia", "Bloat (GDV)"],
+    "Border Collie": ["Collie Eye Anomaly", "Epilepsy"],
+    "Bouvier des Flandres": ["Hip Dysplasia", "Subaortic Stenosis"],
+    "Boxer": ["Boxer Cardiomyopathy (ARVC)", "Mast Cell Tumors"],
+    "Bullmastiff": ["Hip Dysplasia", "Bloat (GDV)"],
+    "Cardigan Welsh Corgi": ["Intervertebral Disc Disease", "Progressive Retinal Atrophy"],
+    "Cane Corso": ["Hip Dysplasia", "Bloat (GDV)"],
+    "Collie": ["Collie Eye Anomaly", "MDR1 Drug Sensitivity"],
+    "Doberman Pinscher": ["Dilated Cardiomyopathy", "Von Willebrand Disease"],
+    "Dogue de Bordeaux": ["Hip Dysplasia", "Bloat (GDV)"],
+    "German Shepherd Dog": ["Hip Dysplasia", "Degenerative Myelopathy"],
+    "Great Dane": ["Bloat (GDV)", "Dilated Cardiomyopathy"],
+    "Great Pyrenees": ["Hip Dysplasia", "Bloat (GDV)"],
+    "Greater Swiss Mountain Dog": ["Hip Dysplasia", "Bloat (GDV)"],
+    "Komondor": ["Hip Dysplasia", "Bloat (GDV)"],
+    "Kuvasz": ["Hip Dysplasia", "Osteochondritis Dissecans"],
+    "Mastiff": ["Hip Dysplasia", "Bloat (GDV)"],
+    "Newfoundland": ["Hip Dysplasia", "Subvalvular Aortic Stenosis"],
+    "Pembroke Welsh Corgi": ["Degenerative Myelopathy", "Intervertebral Disc Disease"],
+    "Portuguese Water Dog": ["Hip Dysplasia", "Progressive Retinal Atrophy"],
+    "Rottweiler": ["Osteosarcoma", "Hip Dysplasia"],
+    "Saint Bernard": ["Hip Dysplasia", "Bloat (GDV)"],
+    "Samoyed": ["Hip Dysplasia", "Progressive Retinal Atrophy"],
+    "Siberian Husky": ["Hereditary Cataracts", "Corneal Dystrophy"],
+    "Standard Schnauzer": ["Hip Dysplasia", "Progressive Retinal Atrophy"],
+    "Airedale Terrier": ["Hip Dysplasia", "Hypothyroidism"],
+    "American Hairless Terrier": ["Skin Sensitivity (Sunburn Risk)", "Patellar Luxation"],
+    "American Staffordshire Terrier": ["Hip Dysplasia", "Cardiomyopathy"],
+    "Bedlington Terrier": ["Copper Storage Disease", "Patellar Luxation"],
+    "Bichon Frise": ["Patellar Luxation", "Dental Disease"],
+    "Boston Terrier": ["Brachycephalic Airway Syndrome", "Cataracts"],
+    "Bull Terrier": ["Deafness", "Heart Disease"],
+    "Cairn Terrier": ["Patellar Luxation", "Legg-Calve-Perthes Disease"],
+    "Chow Chow": ["Hip Dysplasia", "Entropion"],
+    "Dalmatian": ["Deafness", "Urinary Stones (Urate)"],
+    "Finnish Spitz": ["Patellar Luxation", "Progressive Retinal Atrophy"],
+    "Irish Terrier": ["Hyperkeratosis", "Patellar Luxation"],
+    "Keeshond": ["Patellar Luxation", "Hypothyroidism"],
+    "Lhasa Apso": ["Progressive Retinal Atrophy", "Patellar Luxation"],
+    "Miniature Schnauzer": ["Pancreatitis", "Urinary Stones"],
+    "Norwich Terrier": ["Patellar Luxation", "Upper Airway Syndrome"],
+    "Poodle": ["Addison's Disease", "Progressive Retinal Atrophy"],
+    "Rat Terrier": ["Patellar Luxation", "Legg-Calve-Perthes Disease"],
+    "Russell Terrier": ["Patellar Luxation", "Lens Luxation"],
+    "Schipperke": ["Patellar Luxation", "Legg-Calve-Perthes Disease"],
+    "Scottish Terrier": ["Von Willebrand Disease", "Patellar Luxation"],
+    "Shar-Pei": ["Familial Shar-Pei Fever", "Entropion"],
+    "Shiba Inu": ["Patellar Luxation", "Progressive Retinal Atrophy"],
+    "Soft Coated Wheaten Terrier": ["Protein-Losing Nephropathy", "Protein-Losing Enteropathy"],
+    "Staffordshire Bull Terrier": ["Hereditary Cataracts", "Patellar Luxation"],
+    "Teddy Roosevelt Terrier": ["Patellar Luxation", "Legg-Calve-Perthes Disease"],
+    "Tibetan Terrier": ["Progressive Retinal Atrophy", "Hip Dysplasia"],
+    "West Highland White Terrier": ["Patellar Luxation", "Skin Allergies (Atopy)"],
 }
 CAT_BREED_RISKS = {
-    "Domestic Shorthair": [], "Domestic Longhair": [],
-    "Maine Coon": ["Hypertrophic Cardiomyopathy", "Hip Dysplasia"],
-    "Siamese": ["Progressive Retinal Atrophy", "Feline Asthma"],
-    "Persian": ["Polycystic Kidney Disease", "Brachycephalic Airway Syndrome"],
-    "Ragdoll": ["Hypertrophic Cardiomyopathy"],
-    "Bengal": ["Progressive Retinal Atrophy", "Hypertrophic Cardiomyopathy"],
-    "Sphynx": ["Hypertrophic Cardiomyopathy", "Hereditary Myopathy"],
+    "Abyssinian": ["Progressive Retinal Atrophy", "Renal Amyloidosis"],
+    "American Shorthair": ["Hypertrophic Cardiomyopathy"],
+    "American Wirehair": ["Hypertrophic Cardiomyopathy"],
+    "Australian Mist": [],
+    "Bombay": ["Brachycephalic Airway Syndrome"],
     "British Shorthair": ["Hypertrophic Cardiomyopathy", "Polycystic Kidney Disease"],
+    "Burmese": ["Hypokalemia", "Craniofacial Defect"],
+    "Burmilla": [],
+    "Chartreux": ["Patellar Luxation"],
+    "Colorpoint Shorthair": ["Progressive Retinal Atrophy", "Strabismus (Cross-Eye)"],
+    "Egyptian Mau": ["Hypertrophic Cardiomyopathy"],
+    "European Burmese": ["Hypokalemia"],
+    "Exotic Shorthair": ["Polycystic Kidney Disease", "Brachycephalic Airway Syndrome"],
+    "Havana Brown": [],
+    "Korat": [],
+    "Ocicat": [],
+    "Oriental Shorthair": ["Progressive Retinal Atrophy"],
     "Russian Blue": ["Obesity (breed tendency)"],
-    # Osteochondrodysplasia is caused by the fold gene, so every fold-eared cat
-    # HAS it (handled as an always-present condition below). Their at-risk
-    # markers are the cardiac/kidney conditions instead.
-    "Scottish Fold": ["Hypertrophic Cardiomyopathy", "Polycystic Kidney Disease"],
+    "Siamese": ["Progressive Retinal Atrophy", "Feline Asthma"],
+    "Singapura": [],
+    "Snowshoe": [],
+    "Thai": ["Progressive Retinal Atrophy"],
+    "Tonkinese": ["Progressive Retinal Atrophy"],
+    "Balinese": ["Progressive Retinal Atrophy"],
+    "Birman": ["Hypertrophic Cardiomyopathy"],
+    "British Longhair": ["Hypertrophic Cardiomyopathy", "Polycystic Kidney Disease"],
+    "Himalayan": ["Polycystic Kidney Disease", "Brachycephalic Airway Syndrome"],
+    "Javanese": [],
+    "Maine Coon": ["Hypertrophic Cardiomyopathy", "Hip Dysplasia"],
     "Norwegian Forest Cat": ["Glycogen Storage Disease IV", "Hypertrophic Cardiomyopathy"],
+    "Persian": ["Polycystic Kidney Disease", "Brachycephalic Airway Syndrome"],
+    "Ragamuffin": ["Hypertrophic Cardiomyopathy"],
+    "Ragdoll": ["Hypertrophic Cardiomyopathy"],
+    "Scottish Fold Longhair": ["Osteochondrodysplasia"],
+    "Siberian": ["Hypertrophic Cardiomyopathy"],
+    "Somali": ["Progressive Retinal Atrophy", "Renal Amyloidosis"],
+    "Turkish Angora": ["Deafness (white-coat association)"],
+    "Turkish Van": ["Deafness (white-coat association)"],
+    "American Bobtail": [],
+    "American Curl": ["Ear Canal Sensitivity (curled ear structure)"],
+    "Bambino": ["Skin Sensitivity (Sunburn/Temperature)", "Skeletal Issues (short-leg conformation)"],
+    "Bengal": ["Progressive Retinal Atrophy", "Hypertrophic Cardiomyopathy"],
+    "Chausie": [],
+    "Cornish Rex": ["Patellar Luxation", "Thin Bone Structure"],
+    "Cymric": ["Manx Syndrome (Spinal/Tail Defects)"],
+    "Devon Rex": ["Hereditary Myopathy", "Patellar Luxation"],
+    "Donskoy": ["Skin Sensitivity (Sunburn/Temperature)"],
+    "Highlander": ["Ear Canal Sensitivity (curled ear structure)"],
+    "Japanese Bobtail": [],
+    "Kurilian Bobtail": [],
+    "LaPerm": [],
+    "Lykoi": ["Skin Sensitivity (Partial Hairlessness)"],
+    "Manx": ["Manx Syndrome (Spinal/Tail Defects)"],
+    "Munchkin": ["Lordosis/Pectus Excavatum (short-leg conformation)"],
+    "Peterbald": ["Skin Sensitivity (Sunburn/Temperature)"],
+    "Pixiebob": [],
+    "Savannah": ["Hypertrophic Cardiomyopathy"],
+    "Scottish Fold": ["Hypertrophic Cardiomyopathy", "Polycystic Kidney Disease"],
+    "Selkirk Rex": ["Polycystic Kidney Disease"],
+    "Sphynx": ["Hypertrophic Cardiomyopathy", "Hereditary Myopathy"],
+    "Toyger": [],
 }
 # Breeds where the defining trait IS a lifelong condition, so every one has it.
 BREED_ALWAYS_HAS = {
     "Scottish Fold": "Osteochondrodysplasia: inherited cartilage & joint disease — present in all fold-eared cats",
+    "Scottish Fold Longhair": "Osteochondrodysplasia: inherited cartilage & joint disease — present in all fold-eared cats",
 }
 
 # Behavior notes a vet clinic might keep on file.
@@ -263,16 +561,14 @@ def random_medical_history(species, breed, age=1, sex=None):
     if open_risks:
         entries.append(_format_marker(random.choice(open_risks), subject))
     elif not risks:
-        entries.append("Hereditary risk: none identified (mixed ancestry)")
+        entries.append(f"Hereditary risk: none specifically identified for the {breed} breed")
 
     return entries
 
 
-def generate_random_pet(pet_name, species_tuple):
-    """Build a Pet with standard stats for a dog or cat."""
-    species, _category = species_tuple
+def generate_random_pet(pet_name, species, breed):
+    """Build a Pet with standard stats for the given species/breed."""
     breeds = DOG_BREEDS if species == "dog" else CAT_BREEDS
-    breed = random.choice(list(breeds))
     low, high = breeds[breed]
     age, sex = random.randint(1, 15), random.choice(["Male", "Female"])
     return Pet(
@@ -286,35 +582,38 @@ def generate_random_pet(pet_name, species_tuple):
     )
 
 
-def build_distribution(total):
-    """Plan one species per owner: roughly half dogs, half cats."""
-    distribution = list(SPECIES)  # guarantees both dog and cat appear at least once
-
-    extra = total - len(distribution)
-    extra_dogs = extra // 2
-    extra_cats = extra - extra_dogs
-    distribution += [("dog", "mammal")] * extra_dogs + [("cat", "mammal")] * extra_cats
-
+def build_distribution():
+    """One (species, breed) slot per breed in the master list — every breed
+    appears exactly once. Shuffled only to randomize which owner/pet name
+    pairs with which breed, not which breeds are included."""
+    distribution = [("dog", breed) for breed in SEEDED_DOG_BREEDS] + [("cat", breed) for breed in SEEDED_CAT_BREEDS]
     random.shuffle(distribution)
     return distribution
 
 
 def seed_animals_list():
-    """Rebuild data.json from scratch with the full dog-and-cat clinic roster."""
-    distribution = build_distribution(len(OWNER_NAMES))
+    """Rebuild data.json from scratch with exactly one patient per breed."""
+    distribution = build_distribution()
+    total = len(distribution)
+
+    if len(OWNER_NAMES) < total or len(PET_NAMES) < total:
+        raise ValueError(
+            f"Need at least {total} unique owner/pet names, have {len(OWNER_NAMES)} owners and {len(PET_NAMES)} pets."
+        )
 
     owners = []
-    for i, owner_name in enumerate(OWNER_NAMES):
-        owner = Owner(owner_name)
-        pet = generate_random_pet(PET_NAMES[i % len(PET_NAMES)], distribution[i])
+    for i in range(total):
+        species, breed = distribution[i]
+        owner = Owner(OWNER_NAMES[i])
+        pet = generate_random_pet(PET_NAMES[i], species, breed)
         owner.add_pet(pet)
         owners.append(owner)
 
     save_owners_to_json(owners, DATA_PATH)
 
-    dogs = sum(1 for d in distribution if d[0] == "dog")
-    cats = sum(1 for d in distribution if d[0] == "cat")
-    print(f"🏥 CLINIC BUILT! {len(owners)} owners: {dogs} dogs, {cats} cats.")
+    dogs = sum(1 for species, _breed in distribution if species == "dog")
+    cats = sum(1 for species, _breed in distribution if species == "cat")
+    print(f"🏥 CLINIC BUILT! {len(owners)} owners: {dogs} dog breeds, {cats} cat breeds (one patient per breed).")
 
 
 seed_master_list = seed_animals_list
