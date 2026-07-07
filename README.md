@@ -35,6 +35,7 @@ The assignment's example extension combos, mapped to what's actually implemented
 | RAG + validation | 🟡 Partial | `ai_system.py` matches guidance by species/category before returning it, but there's no separate, explicit validation/scoring pass reported back to the user beyond the confidence score |
 | RAG + guardrails + check/revise (stretch) | ✅ Implemented (stretch) | `ai_applied_prediagnostic.py` (symptom → specialty retrieval, a hardcoded emergency-keyword guardrail that's actual enforced code, and a doctor-availability check/revise escalation), `pages/ai_prediagnostic_assessment.py`, `logs/prediagnostic_traces.jsonl` |
 | RAG + guardrails (stretch) | ✅ Implemented (stretch) | `ai_applied_medication_advisor.py` (diagnosed condition → curated medication retrieval, with a hard species-safety filter enforced in code, not just a scoring bonus), `pages/ai_medication_advisor.py`, `logs/medication_advice.jsonl` |
+| RAG + ranking (stretch) | ✅ Implemented (stretch) | `ai_applied_adoption_match.py` (lifestyle quiz answers scored against every seeded breed's structured traits, ranked top-5 with a Good match/Caution/Not ideal label and a per-axis reasoning trace), `pages/adoption_quiz.py`, `logs/adoption_match_traces.jsonl` |
 
 ## Setup
 
@@ -196,6 +197,35 @@ Each recommendation appends a record to `logs/medication_advice.jsonl`; the actu
 {"timestamp": "2026-07-07T06:47:49", "condition_text": "diagnosed with hyperthyroidism, elevated T4", "species": "cat", "medication": "Methimazole", "label_status": "FDA-approved veterinary label", "confidence": 0.8}
 ```
 
+## Adoption Match Quiz (Stretch: RAG + Ranking)
+
+The "PawPal AI Pet Adoption" nav section's Adoption Match Quiz page asks 4 lifestyle questions (desired energy level, grooming tolerance, apartment vs. yard, and whether the pet must be kid-friendly), and `ai_applied_adoption_match.py` scores every one of the 178 seeded breeds against the answers using `breed_traits.py`'s structured per-breed data (energy, grooming needs, shedding, hypoallergenic, apartment-friendly, kid-friendly, beginner-friendly — hand-authored for all 117 dog and 61 cat breeds, alongside the existing `breed_personality.py` temperament sentences and `seed/seed_animals_distribution.py`'s health-risk data, which are reused rather than duplicated). Each breed gets a score out of 4 equally-weighted axes, a plain-language "✅ Good match / ⚠️ Caution / ❌ Not ideal" label, and a per-axis reasoning trace explaining exactly which preferences matched or didn't — the same retrieval-and-rank shape as `ai_system.py`/`ai_applied_prediagnostic.py`, applied to structured quiz answers instead of free-text keywords.
+
+Real example:
+
+```text
+Quiz answers: species=dog, energy=low, grooming tolerance=low, apartment=yes, kids=yes
+
+1. Basset Hound — ✅ Good match (4/4)
+   ✓ Energy level matches (low).
+   ✓ Grooming needs (low) fit your tolerance.
+   ✓ Fits an apartment/small space.
+   ✓ Good with kids.
+2. French Bulldog — ✅ Good match (4/4)
+3. Pug — ✅ Good match (4/4)
+4. American Hairless Terrier — ✅ Good match (3/4)
+   ✗ Energy level is high, you wanted low.
+5. American Staffordshire Terrier — ✅ Good match (3/4)
+```
+
+Real embedded trace from `logs/adoption_match_traces.jsonl`:
+
+```json
+{"timestamp": "2026-07-07T09:55:21", "answers": {"species_preference": "dog", "energy_level": "low", "grooming_tolerance": "low", "apartment": true, "wants_kid_friendly": true}, "top_matches": [{"species": "dog", "breed": "Basset Hound", "score": 4, "label": "✅ Good match"}, {"species": "dog", "breed": "French Bulldog", "score": 4, "label": "✅ Good match"}, {"species": "dog", "breed": "Pug", "score": 4, "label": "✅ Good match"}, {"species": "dog", "breed": "American Hairless Terrier", "score": 3, "label": "✅ Good match"}, {"species": "dog", "breed": "American Staffordshire Terrier", "score": 3, "label": "✅ Good match"}]}
+```
+
+The Breed Directory, Compare Breeds, and My Adoption Plan pages round out the section: lifestyle filters and a per-breed detail view (temperament, exercise needs, grooming/health notes) on Breed Directory, a side-by-side comparison on Compare Breeds, and session-scoped favorites, a pre-adoption checklist, and a before/first-week/first-month timeline on My Adoption Plan. All three reuse the same `breed_traits.py`/`breed_personality.py` data as the quiz rather than maintaining separate copies.
+
 ## Reproducible Execution Evidence
 
 All output below is pasted directly from real runs on 2026-07-06, not hand-written. Reproduce it yourself with `pip install -r requirements.txt` followed by the commands shown.
@@ -337,6 +367,9 @@ The project includes automated tests plus a simple evaluation script for the adv
 - Species is a hard filter in the medication advisor, applied before scoring, not a bonus added to the score — so a medication can never be suggested for a species its entry doesn't list, even if its keywords would otherwise win.
 - Grooming durations are realistic instead of one flat number: `grooming_duration.py` sizes a dog's visit by breed (falling back to weight, then to "medium" if neither is known) and gives cats a shorter flat range, based on typical full-service grooming times. The seeder schedules each pet's one monthly grooming visit back-to-back into an actual groomer's day, capped at business hours, rather than giving every pet a same-length appointment every single day regardless of size.
 - Each medication entry is tagged with its real label status (`FDA-approved veterinary label` vs `Extra-label (human-labeled drug) used under veterinary direction`) rather than presenting every entry as equally "labeled" — several commonly-used veterinary drugs (e.g. gabapentin-style human drugs) are legitimately off-label in animals, and a "strictly by the label" feature should say so.
+- The adoption quiz's 4 scoring axes map 1:1 onto the 4 questions actually asked (energy, grooming, apartment fit, kid-friendliness); broader lifestyle concepts the user also wanted (hypoallergenic, beginner-friendly, low-shedding, active/calm, family-friendly) live as Breed Directory filters instead of quiz axes, since they weren't part of the quiz's own question set and folding them in would silently change what the score means.
+- Every mock "available now" adoption listing is generated deterministically from the breed name (not the process RNG), so a given breed shows the same fictional listing across reruns instead of jittering — and every place they render shows a fixed caption stating they're demo data, not real shelter inventory, so a demo viewer can't mistake them for the clinic's actual patients.
+- Favorites, the compare-breeds selection, and the adoption checklist are session-only (`st.session_state`), not saved to `data.json` — adoption browsing isn't tied to an existing clinic `Owner` record, so there's no natural place on disk for this state to live, and every other page-local UI toggle in the app already follows this session-only pattern.
 
 ## Testing Summary
 
@@ -347,6 +380,7 @@ The project includes automated tests plus a simple evaluation script for the adv
 - The pre-diagnostic assessment was verified with real (not fabricated) runs covering: a routine specialty match (Orthopedics), the emergency-keyword guardrail overriding the match (Emergency), an unrecognized-symptom fallback (General Practice), and a doctor-escalation when the first matching doctor's day is fully booked — see `ai_interactions.md` for the full traces. Also verified end-to-end via Streamlit's `AppTest`: submitting the symptom form renders the correct recommendation and emergency banner, and the Appointments booking dialog correctly reads back the one-shot `st.session_state` prefill (doctor selectbox defaults to the recommended doctor, reason defaults to the symptom text) and clears it after use.
 - The medication advisor was verified with real (not fabricated) runs covering: a correct species-appropriate match (Carprofen for a dog with osteoarthritis), the species-safety filter blocking a mismatched suggestion (a dog can't get the cat-only hyperthyroidism drug), a species outside the corpus entirely returning no recommendation instead of a guess, and the correct match once species is corrected (Methimazole for a cat) — see `ai_interactions.md` for the full traces. Also verified end-to-end via Streamlit's `AppTest`: selecting a real dog patient and "Osteoarthritis / joint pain" correctly returned Carprofen.
 - Grooming's realistic durations were verified directly against the regenerated demo data: all 170 dog/cat patients get exactly one grooming visit spread across the month (5-6 per day, not clustered), durations genuinely vary by pet (e.g. a Golden Retriever's 157 minutes vs. a cat's 31 minutes in one real run), and no groomer's appointments overlap. Also verified via `AppTest` that the manual booking form's duration default itself changes per selected pet instead of a flat number.
+- `breed_traits.py`'s coverage was verified programmatically (zero missing/extra breeds against the seeded 117 dog / 61 cat lists) before any page used it. The adoption match quiz was verified with real (not fabricated) runs covering: a full 4/4 match, a partial match where one axis fails (apartment-unfriendly breed scored down and labeled "Caution"), and species-preference filtering restricting results to only dogs or only cats — see `logs/adoption_match_traces.jsonl` for real traces. Also verified end-to-end via `AppTest` across all 4 adoption pages: submitting the quiz renders ranked results with correct labels, the Breed Directory's lifestyle filters and detail view render correctly, favoriting/comparing a breed on one page correctly shows up on My Adoption Plan / Compare Breeds (session state shared across pages), and the breed detail dialog opens with correct content.
 
 ## Notes
 

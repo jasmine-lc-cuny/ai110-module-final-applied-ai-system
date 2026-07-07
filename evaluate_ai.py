@@ -8,6 +8,7 @@ import csv
 from ai_system import advise_service
 from ai_applied_prediagnostic import assess_symptoms
 from ai_applied_medication_advisor import recommend_medication
+from ai_applied_adoption_match import QuizAnswers, best_matches
 from constants import CATEGORY_TASK_TITLES
 
 
@@ -45,6 +46,17 @@ def main() -> None:
         print("PASS: Medication advisor matched osteoarthritis retrieval and blocked a species-inappropriate suggestion")
     else:
         print("FAIL: Medication advisor did not behave as expected")
+        raise SystemExit(1)
+
+    quiz_answers = QuizAnswers(
+        species_preference="dog", energy_level="low", grooming_tolerance="low",
+        apartment=True, wants_kid_friendly=True,
+    )
+    top_matches = best_matches(quiz_answers, top_n=5)
+    if len(top_matches) == 5 and top_matches[0].species == "dog" and top_matches[0].score >= top_matches[-1].score:
+        print(f"PASS: Adoption match quiz ranked top breed '{top_matches[0].breed}' ({top_matches[0].label})")
+    else:
+        print("FAIL: Adoption match quiz did not return a valid ranked list")
         raise SystemExit(1)
 
 

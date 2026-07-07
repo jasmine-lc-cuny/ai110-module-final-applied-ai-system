@@ -3,6 +3,8 @@ from datetime import date, timedelta
 from ai_system import advise_service
 from ai_applied_prediagnostic import assess_symptoms, recommend_doctor
 from ai_applied_medication_advisor import recommend_medication
+from ai_applied_adoption_match import QuizAnswers, best_matches, score_breed
+from breed_traits import breed_traits
 from grooming_duration import dog_size_tier, grooming_duration_minutes
 from pawpal_system import (
     Appointment,
@@ -843,3 +845,54 @@ def test_clinic_round_trips_staff(tmp_path):
     loaded = Clinic.load_from_json(str(json_path))
 
     assert loaded.staff == clinic.staff
+
+
+def test_breed_traits_looks_up_known_dog_and_cat():
+    dog_traits = breed_traits("dog", "Great Dane")
+    cat_traits = breed_traits("cat", "Sphynx")
+
+    assert dog_traits is not None and dog_traits.apartment_friendly is False
+    assert cat_traits is not None and cat_traits.hypoallergenic is True
+
+
+def test_breed_traits_returns_none_for_unknown_breed():
+    assert breed_traits("dog", "Not A Real Breed") is None
+    assert breed_traits("dog", None) is None
+
+
+def test_score_breed_full_match_is_good_match():
+    answers = QuizAnswers(
+        species_preference="dog", energy_level="low", grooming_tolerance="low",
+        apartment=True, wants_kid_friendly=True,
+    )
+
+    match = score_breed(answers, "dog", "French Bulldog")
+
+    assert match.score == 4
+    assert match.label == "✅ Good match"
+    assert len(match.trace) == 4
+
+
+def test_score_breed_apartment_mismatch_lowers_score():
+    answers = QuizAnswers(
+        species_preference="dog", energy_level="medium", grooming_tolerance="low",
+        apartment=True, wants_kid_friendly=True,
+    )
+
+    match = score_breed(answers, "dog", "Great Dane")
+
+    assert match.score < 4
+    assert any("apartment" in line.lower() for line in match.trace)
+
+
+def test_best_matches_respects_species_preference_and_sorts_descending():
+    answers = QuizAnswers(
+        species_preference="cat", energy_level="high", grooming_tolerance="high",
+        apartment=False, wants_kid_friendly=False,
+    )
+
+    top = best_matches(answers, top_n=5)
+
+    assert len(top) == 5
+    assert all(match.species == "cat" for match in top)
+    assert [match.score for match in top] == sorted((match.score for match in top), reverse=True)

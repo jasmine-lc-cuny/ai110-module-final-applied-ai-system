@@ -105,6 +105,9 @@ pg = st.navigation(
         ],
         "🐾 PawPal AI Pet Adoption": [
             st.Page("pages/breed_directory.py", title="Breed Directory", icon="📖"),
+            st.Page("pages/adoption_quiz.py", title="Adoption Match Quiz", icon="🧭"),
+            st.Page("pages/breed_compare.py", title="Compare Breeds", icon="⚖️"),
+            st.Page("pages/my_adoption_plan.py", title="My Adoption Plan", icon="📋"),
         ],
     }
 )

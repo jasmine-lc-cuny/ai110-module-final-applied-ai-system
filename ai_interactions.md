@@ -84,6 +84,30 @@
 
 **Verification performed:** unit-tested `recommend_medication()` directly for all five paths (species-appropriate match, species-blocked mismatch, a species entirely outside the corpus, correct-species success, and an unrecognized-condition fallback); confirmed via Streamlit's `AppTest` that selecting an actual dog patient with "Osteoarthritis / joint pain" correctly renders Carprofen with its real label text and guardrail. Full pytest suite (69 tests, 5 new) still passes.
 
+## Adoption Match Quiz (Stretch)
+
+**What was built:** `ai_applied_adoption_match.py` plus 4 new pages under a new "PawPal AI Pet Adoption" nav section: Breed Directory (filterable reference table + per-breed detail view), Adoption Match Quiz (4-question lifestyle quiz → top-5 ranked breed matches), Compare Breeds (side-by-side comparison), and My Adoption Plan (favorites, a pre-adoption checklist, and a timeline). This required authoring a new structured data module, `breed_traits.py` — energy level, grooming needs, shedding, hypoallergenic, apartment-friendly, kid-friendly, and beginner-friendly for all 117 seeded dog breeds and 61 seeded cat breeds — since no structured (as opposed to free-text) breed data existed anywhere in the repo before this.
+
+**Why this design:** This is a fourth distinct RAG use case in the project, but the only one scoring structured quiz answers against structured breed data rather than free-text keywords. Each of the 4 quiz questions (energy level, grooming tolerance, apartment size, kid-friendliness) maps to exactly one `BreedTraits` axis, scored independently and summed to a score out of 4, then bucketed into a plain-language label (✅ Good match / ⚠️ Caution / ❌ Not ideal). Broader lifestyle concepts the user also wanted (hypoallergenic, beginner-friendly, low-shedding, active/calm, family-friendly) were deliberately kept as Breed Directory *filters* rather than additional quiz axes — they weren't part of the quiz's own 4 named questions, and folding them into the score would have silently changed what "the score" means. Health notes and temperament are reused from the existing `seed/seed_animals_distribution.py` risk data and `breed_personality.py`, not re-authored, to avoid two sources of truth. The mock "available now" adoption listings (`mock_shelter_listings.py`) are seeded deterministically off the breed name specifically so they don't jitter across reruns, and every place they render carries a fixed caption stating they're demo data — a small honesty guardrail so a viewer can't mistake fictional listings for the clinic's real patients.
+
+**Trace — a full run of the quiz** (apartment-dweller wanting a calm, low-maintenance, kid-friendly dog):
+
+```json
+{"timestamp": "2026-07-07T09:55:21", "answers": {"species_preference": "dog", "energy_level": "low", "grooming_tolerance": "low", "apartment": true, "wants_kid_friendly": true}, "top_matches": [{"species": "dog", "breed": "Basset Hound", "score": 4, "label": "✅ Good match"}, {"species": "dog", "breed": "French Bulldog", "score": 4, "label": "✅ Good match"}, {"species": "dog", "breed": "Pug", "score": 4, "label": "✅ Good match"}, {"species": "dog", "breed": "American Hairless Terrier", "score": 3, "label": "✅ Good match"}, {"species": "dog", "breed": "American Staffordshire Terrier", "score": 3, "label": "✅ Good match"}]}
+```
+
+**Trace — a mismatch scoring lower** (same apartment/low-energy/kid-friendly answers scored directly against a Great Dane, via `score_breed()` rather than the ranked quiz):
+
+```text
+Great Dane: score 2/4, label "⚠️ Caution"
+✗ Energy level is medium, you wanted low.
+✓ Grooming needs (low) fit your tolerance.
+✗ Not well suited to apartment living.
+✓ Good with kids.
+```
+
+**Verification performed:** programmatic coverage check confirming `breed_traits.py` has zero missing/extra breeds against the seeded 117-dog/61-cat lists; unit-tested `score_breed()`/`best_matches()` directly for a full match, a partial mismatch, and species-preference filtering; confirmed via Streamlit's `AppTest` across all 4 adoption pages that the quiz form renders ranked results with correct labels, the Breed Directory's lifestyle filters and detail dialog work, and favoriting/comparing a breed on one page correctly appears on another (shared `st.session_state`). Full pytest suite (79 tests, 5 new) still passes.
+
 ## Agent Workflow
 
 This project used two different AI coding assistants for two different jobs: Codex built the initial skeleton and backend, and Claude Code (used in the follow-up session covering this log) audited that work against the assignment, fixed what was actually broken, and completed the optional challenges. Codex was then brought back in for one narrow, specific job: acting as the second model in the Challenge 5 comparison below.
