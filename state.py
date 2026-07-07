@@ -1,7 +1,7 @@
 """Session state and persistence helpers for PawPal."""
 
 import streamlit as st
-from datetime import datetime
+from datetime import date, datetime
 
 from constants import CLINIC_DATA_PATH, DATA_PATH
 from pawpal_system import Clinic, Owner, Scheduler, load_owners_from_json, save_owners_to_json
@@ -29,6 +29,11 @@ def _owners_have_tasks(owners: list[Owner]) -> bool:
     return any(pet.tasks for owner in owners for pet in owner.pets)
 
 
+def _owners_have_todays_tasks(owners: list[Owner]) -> bool:
+    today = date.today()
+    return any(task.due_date == today for owner in owners for pet in owner.pets for task in pet.tasks)
+
+
 def _close_overdue_tasks(owners: list[Owner]) -> bool:
     """Mark open tasks as complete once their scheduled time has passed."""
     now = datetime.now()
@@ -52,6 +57,9 @@ def ensure_demo_data() -> None:
 
     owners_missing_or_empty = not disk_owners
     tasks_missing = bool(disk_owners) and not _owners_have_tasks(disk_owners)
+    schedule_stale = (
+        bool(disk_owners) and not tasks_missing and not _owners_have_todays_tasks(disk_owners)
+    )
     clinic_missing = disk_clinic is None
     doctors_missing = clinic_missing or not disk_clinic.doctors
     staff_missing = clinic_missing or not disk_clinic.staff
@@ -59,6 +67,7 @@ def ensure_demo_data() -> None:
     if (
         not owners_missing_or_empty
         and not tasks_missing
+        and not schedule_stale
         and not clinic_missing
         and not doctors_missing
         and not staff_missing
@@ -80,10 +89,12 @@ def ensure_demo_data() -> None:
 
         seed_doctors()
 
-    if owners_missing_or_empty or tasks_missing or clinic_missing:
+    # "all" (not the "services"-only default) so vet appointments get
+    # regenerated for today too, every time the daily schedule is refreshed.
+    if owners_missing_or_empty or tasks_missing or schedule_stale or clinic_missing:
         from seed.seed_random_appointments import seed_random_appointments
 
-        seed_random_appointments()
+        seed_random_appointments("all")
         disk_owners = _load_owners_from_disk()
 
     if _close_overdue_tasks(disk_owners):

@@ -8,6 +8,7 @@ import argparse
 from datetime import datetime, timedelta, time
 from pathlib import Path
 
+from constants import CATEGORY_TASK_TITLES, CATEGORY_TO_SECTION
 from pawpal_system import Appointment, Clinic, Doctor, Task, load_owners_from_json, save_owners_to_json
 
 DATA_PATH = Path("data.json")
@@ -31,31 +32,22 @@ REASONS_BY_SPECIES = {
 
 STATUS_OPTIONS = ["Pending", "Confirmed", "Completed"]
 
-TASK_TEMPLATES = [
-    ("Morning Walk", "walking", 30, "high", "daily"),
-    ("Afternoon Walk", "walking", 30, "medium", "daily"),
-    ("Brush Coat", "grooming", 20, "medium", "once"),
-    ("Wash / Bath", "grooming", 30, "medium", "once"),
-    ("Day Sitting", "sitting", 60, "medium", "once"),
-    ("Overnight Sitting", "sitting", 480, "medium", "once"),
-    ("Obedience Training", "training", 45, "high", "once"),
-    ("Leash Training", "training", 45, "high", "once"),
-    ("Breakfast", "special_services", 15, "medium", "daily"),
-    ("Lunch", "special_services", 15, "medium", "daily"),
-    ("Vet Appointment", "veterinary", 30, "high", "once"),
-]
+# One task per pet per eligible category per day, using the same full task
+# lists the live booking form offers (constants.CATEGORY_TASK_TITLES) instead
+# of a narrow hand-picked subset — otherwise the seeded demo only ever shows
+# 1-2 of each category's real task variety.
+CATEGORY_TASK_DEFAULTS = {
+    "walking": (30, "medium", "daily"),
+    "grooming": (25, "medium", "once"),
+    "training": (45, "high", "once"),
+    "special_services": (15, "medium", "daily"),
+    "sitting": (60, "medium", "once"),
+}
 
-DOG_SERVICE_CATEGORIES = {"walking", "grooming", "training", "special_services"}
-CAT_SERVICE_CATEGORIES = {"grooming", "sitting"}
+DOG_SERVICE_CATEGORIES = ["walking", "grooming", "training", "special_services"]
+CAT_SERVICE_CATEGORIES = ["grooming", "sitting"]
 DAY_START_MINUTES = 7 * 60
 DAY_END_MINUTES = 20 * 60
-CATEGORY_TO_SECTION = {
-    "grooming": "Grooming",
-    "sitting": "Sitting",
-    "training": "Training",
-    "walking": "Walking",
-    "special_services": "Dog Cafes",
-}
 
 
 def _round_up_to_quarter(moment: datetime) -> datetime:
@@ -112,7 +104,9 @@ def _staff_for_category(clinic: Clinic, category: str):
     return random.choice(active_staff) if active_staff else None
 
 
-def _seed_service_tasks(owners, clinic: Clinic, anchor: datetime, *, species: str, categories: set[str]) -> int:
+def _seed_service_tasks(owners, clinic: Clinic, anchor: datetime, *, species: str, categories: list[str]) -> int:
+    """Give every matching pet one task in each eligible category, so every
+    service section has coverage every day instead of a random 2-task sample."""
     seeded = 0
     for owner_index, owner in enumerate(owners):
         for pet_index, pet in enumerate(owner.pets):
@@ -120,16 +114,17 @@ def _seed_service_tasks(owners, clinic: Clinic, anchor: datetime, *, species: st
                 continue
 
             pet.tasks = []
-            available_templates = [tpl for tpl in TASK_TEMPLATES if tpl[1] in categories]
-            for task_offset in range(2):
-                title, category, duration, priority, frequency = available_templates[
-                    (owner_index + pet_index + task_offset) % len(available_templates)
-                ]
+            for task_offset, category in enumerate(categories):
+                titles = CATEGORY_TASK_TITLES.get(category, [])
+                if not titles:
+                    continue
+                title = titles[(owner_index + pet_index + task_offset) % len(titles)]
+                duration, priority, frequency = CATEGORY_TASK_DEFAULTS.get(category, (30, "medium", "once"))
                 assigned_staff = _staff_for_category(clinic, category)
                 due_date = anchor.date()
                 time_str = _time_within_window(
                     anchor,
-                    offset_minutes=10 + owner_index * 6 + pet_index * 9 + task_offset * 13,
+                    offset_minutes=10 + owner_index * 6 + pet_index * 9 + task_offset * 37,
                     duration_minutes=duration,
                 )
                 pet.add_task(
