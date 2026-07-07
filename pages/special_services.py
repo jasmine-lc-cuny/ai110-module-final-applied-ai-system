@@ -1,6 +1,7 @@
 import streamlit as st
 
-from app_common import A_LA_BARK_MENU, render_category_page
+from app_common import render_category_page
+from constants import A_LA_BARK_MENU
 
 # The "special_services" category covers the feeding tasks (Breakfast/Lunch/
 # Dinner) plus anything task_type_icon() can't categorize — presented as

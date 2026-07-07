@@ -11,10 +11,10 @@ from app_common import (
     get_clinic,
     get_owners,
     render_live_clock,
-    render_veterinary_reason_picker,
     save_clinic,
     save_owners,
 )
+from pickers import render_veterinary_reason_picker
 
 VISIT_REASON_TITLES = CATEGORY_TASK_TITLES["veterinary"] + ["Other (custom)"]
 
