@@ -1,6 +1,7 @@
 """Shared state and UI helpers used across every page of the multi-page app."""
 
-from datetime import date
+from collections import defaultdict
+from datetime import date, timedelta
 
 import streamlit as st
 
@@ -202,14 +203,47 @@ def render_category_filters(category: str, display_name: str, owner: Owner, titl
 
     return selected_owner, selected_pet_index, allowed_species, st.session_state[toggle_key]
 
+def _end_of_month(day: date) -> date:
+    if day.month == 12:
+        return date(day.year, 12, 31)
+    return date(day.year, day.month + 1, 1) - timedelta(days=1)
+
+
 def render_category_schedule(category: str, display_name: str, category_tasks):
-    """Render the task table, completion actions, and schedule footer."""
+    """Render the day-by-day schedule (today through end of month), completion actions, and schedule footer."""
     st.divider()
     st.subheader(f"{display_name} Schedule")
-    if category_tasks:
-        st.table(task_rows(category_tasks, include_reason=category == "veterinary"))
-    else:
-        st.info(f"No {display_name.lower()} tasks yet.")
+
+    today = date.today()
+    month_end = _end_of_month(today)
+    tasks_by_date = defaultdict(list)
+    for pet, task in tasks_in_category(get_combined_owner(), category):
+        if today <= task.due_date <= month_end and "07:00" <= task.time <= "20:00":
+            tasks_by_date[task.due_date].append((pet, task))
+
+    expand_all_key = f"{category}_expand_all_days"
+    if expand_all_key not in st.session_state:
+        st.session_state[expand_all_key] = False
+
+    show_all_col, show_none_col = st.columns(2)
+    with show_all_col:
+        if st.button("Show all", key=f"{category}_show_all_days", use_container_width=True):
+            st.session_state[expand_all_key] = True
+            st.rerun()
+    with show_none_col:
+        if st.button("Show none", key=f"{category}_show_none_days", use_container_width=True):
+            st.session_state[expand_all_key] = False
+            st.rerun()
+
+    day = today
+    while day <= month_end:
+        day_pairs = sorted(tasks_by_date.get(day, []), key=lambda pair: pair[1].time)
+        with st.expander(day.strftime("%B %d, %Y"), expanded=st.session_state[expand_all_key]):
+            if day_pairs:
+                st.table(task_rows(day_pairs, include_reason=category == "veterinary"))
+            else:
+                st.caption(f"No {display_name.lower()} tasks scheduled.")
+        day += timedelta(days=1)
 
     open_category_tasks = [pair for pair in category_tasks if not pair[1].completed]
     if open_category_tasks:

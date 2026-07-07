@@ -331,11 +331,9 @@ def render_monthly_schedule_page(
     caption: str,
     categories: set[str] | None,
     session_key_prefix: str,
-    include_reason: bool,
 ) -> None:
     """Render a full month-calendar page scoped to the given task categories."""
     owner = get_combined_owner()
-    scheduler = get_scheduler()
 
     st.title(f"{page_icon} {page_title}")
     st.caption(caption)
@@ -373,36 +371,5 @@ def render_monthly_schedule_page(
 
     scoped_pairs = _scoped_pairs(owner, categories)
     _render_month_grid(owner, scoped_pairs, target_year, target_month)
-
-    st.divider()
-    st.subheader("Day Details")
-
-    month_dates = [
-        day
-        for week in calendar_module.Calendar(firstweekday=0).monthdatescalendar(target_year, target_month)
-        for day in week
-        if day.month == target_month
-    ]
-    default_date = today if today in month_dates else month_dates[0]
-    selected_date_index = st.selectbox(
-        "View a day's tasks",
-        range(len(month_dates)),
-        index=month_dates.index(default_date),
-        format_func=lambda i: month_dates[i].strftime("%A, %B %d"),
-        key=f"{session_key_prefix}_calendar_day_select",
-    )
-    selected_date = month_dates[selected_date_index]
-
-    day_tasks = scheduler.sort_by_time(
-        [pair for pair in scoped_pairs if pair[1].due_date == selected_date]
-    )
-    if day_tasks:
-        st.table(task_rows(day_tasks, include_reason=include_reason))
-    else:
-        st.info("No tasks scheduled for this day.")
-
-    day_conflicts = scheduler.detect_conflicts(day_tasks)
-    for warning in day_conflicts:
-        st.warning(warning)
 
     st.caption("Data is auto-saved to `data.json` after every change, so it persists between app runs.")
