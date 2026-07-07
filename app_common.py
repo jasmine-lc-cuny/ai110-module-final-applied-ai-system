@@ -56,23 +56,32 @@ def task_pair_label(index: int, pet: Pet, task: Task, owners: list[Owner]) -> st
         f"@ {format_time_12h(task.time)}"
     )
 
-def task_rows(task_pairs):
-    return [
-        {
+def task_rows(task_pairs, *, include_reason: bool = True):
+    """Build schedule-table rows. Reason only applies to veterinary visits,
+    so callers for the other bookable sections (Grooming, Sitting, Training,
+    Walking, Dog Cafes) pass include_reason=False to drop that column."""
+    rows = []
+    for pet, task in task_pairs:
+        row = {
             "Type": task_type_icon(task.title),
             "Time": format_time_12h(task.time),
             "Pet": f"{pet_species_icon(pet.species)} {pet.name}",
             "Species": pet.species,
             "Task": task.title,
-            "Reason": task.notes or "—",
-            "Assigned To": task.assignee or "—",
-            "Duration": task.duration_minutes,
-            "Priority": f"{priority_icon(task.priority)} {task.priority}",
-            "Due Date": task.due_date.isoformat(),
-            "Status": "✅ Done" if task.completed else "⏳ Open",
         }
-        for pet, task in task_pairs
-    ]
+        if include_reason:
+            row["Reason"] = task.notes or "—"
+        row.update(
+            {
+                "Assigned To": task.assignee or "—",
+                "Duration": task.duration_minutes,
+                "Priority": f"{priority_icon(task.priority)} {task.priority}",
+                "Due Date": task.due_date.isoformat(),
+                "Status": "✅ Done" if task.completed else "⏳ Open",
+            }
+        )
+        rows.append(row)
+    return rows
 
 def tasks_in_category(owner: Owner, category: str):
     # An explicit task.category (set when booked) wins; tasks created before
@@ -198,7 +207,7 @@ def render_category_schedule(category: str, display_name: str, category_tasks):
     st.divider()
     st.subheader(f"{display_name} Schedule")
     if category_tasks:
-        st.table(task_rows(category_tasks))
+        st.table(task_rows(category_tasks, include_reason=category == "veterinary"))
     else:
         st.info(f"No {display_name.lower()} tasks yet.")
 

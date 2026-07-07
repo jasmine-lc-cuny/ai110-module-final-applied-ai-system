@@ -100,7 +100,7 @@ todays_service_pairs = [
     pair for pair in scheduler.sort_by_time(service_pairs) if pair[1].due_date == today and not pair[1].completed
 ]
 if todays_service_pairs:
-    st.table(task_rows(todays_service_pairs))
+    st.table(task_rows(todays_service_pairs, include_reason=False))
 else:
     st.info("No service bookings due today.")
 
@@ -112,7 +112,7 @@ upcoming_service_pairs = [
     if pair[1].due_date >= today and not pair[1].completed
 ][:8]
 if upcoming_service_pairs:
-    st.table(task_rows(upcoming_service_pairs))
+    st.table(task_rows(upcoming_service_pairs, include_reason=False))
 else:
     st.caption("Nothing upcoming yet.")
 

@@ -47,7 +47,6 @@ def render_category_booking_form(category: str, display_name: str, active_staff,
             default=[title for title in default_titles if title in title_options] or title_options[:1],
             key=f"{category}_title_select",
         )
-        st.text_input("Reason", value="—", disabled=True, key=f"{category}_disabled_reason")
         reason = None
 
     if not selected_titles:
