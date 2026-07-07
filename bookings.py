@@ -5,8 +5,9 @@ from datetime import date
 import streamlit as st
 
 from ai_system import advise_service
+from availability import find_available_slots
 from constants import CATEGORY_TASK_TITLES
-from pawpal_system import Task
+from pawpal_system import Task, format_time_12h
 from pickers import render_dog_cafe_menu_picker, render_veterinary_reason_picker
 from state import get_combined_owner, save_owner
 
@@ -19,11 +20,38 @@ def _default_task_selection(category: str, title_options: list[str]) -> list[str
     return title_options[:1]
 
 
+def _render_staff_availability(active_staff, category: str) -> None:
+    """Show each active staff member's open slots today, so a cancellation
+    elsewhere becomes visibly bookable before the form is even filled out."""
+    if not active_staff:
+        return
+    today = date.today()
+    combined_owner = get_combined_owner()
+    with st.expander("📅 Staff availability today", expanded=False):
+        for member in active_staff:
+            busy = [
+                (task.time, task.duration_minutes)
+                for pet, task in combined_owner.all_tasks()
+                if task.assignee == member.full_name
+                and task.due_date == today
+                and task.category == category
+            ]
+            slots = find_available_slots(busy)
+            if not slots:
+                st.caption(f"**{member.full_name}**: fully booked today")
+                continue
+            shown = ", ".join(f"{format_time_12h(s)}–{format_time_12h(e)}" for s, e in slots[:6])
+            more = f" (+{len(slots) - 6} more)" if len(slots) > 6 else ""
+            st.caption(f"**{member.full_name}**: {shown}{more}")
+
+
 def render_category_booking_form(category: str, display_name: str, active_staff, selected_owner, selected_pet_index):
     """Render the task booking form and handle task creation."""
     title_options = CATEGORY_TASK_TITLES.get(category, [])
     if not title_options:
         return
+
+    _render_staff_availability(active_staff, category)
 
     selected_pet = selected_owner.pets[selected_pet_index]
     advice = advise_service(category, selected_pet.species, title_options)

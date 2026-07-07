@@ -78,7 +78,7 @@ def home_page():
 pg = st.navigation(
     {
         "": [st.Page(home_page, title="Home", icon="🏠", url_path="home", default=True)],
-        "🐾 PawPal Manage": [
+        "🐾 PawPal AI Streamlit": [
             st.Page("pages/dashboard.py", title="Pet Profile", icon="📊"),
         ],
         "🛎️ Book a Service": [

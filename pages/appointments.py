@@ -5,6 +5,7 @@ import streamlit as st
 
 from pawpal_system import APPOINTMENT_STATUSES, Appointment, Task, find_owner, format_time_12h
 from ai_system import advise_service
+from availability import find_available_slots, freed_slot_label
 from app_common import (
     APPOINTMENT_STATUS_COLORS,
     CATEGORY_TASK_TITLES,
@@ -55,6 +56,24 @@ def book_appointment_dialog(owners, clinic) -> None:
         st.warning("No active doctors yet.")
         st.page_link("pages/doctors.py", label="Go to Doctors", icon="👩‍⚕️")
         return
+
+    today = date.today()
+    with st.expander("🩺 Doctor availability today", expanded=False):
+        for doctor in active_doctors:
+            busy = [
+                (appt.time, 30)
+                for appt in clinic.appointments
+                if appt.doctor_username == doctor.username
+                and appt.date == today
+                and appt.status != "Cancelled"
+            ]
+            slots = find_available_slots(busy)
+            if not slots:
+                st.caption(f"**{doctor.full_name}**: fully booked today")
+                continue
+            shown = ", ".join(f"{format_time_12h(s)}–{format_time_12h(e)}" for s, e in slots[:6])
+            more = f" (+{len(slots) - 6} more)" if len(slots) > 6 else ""
+            st.caption(f"**{doctor.full_name}**: {shown}{more}")
 
     patient_index = st.selectbox(
         "Patient*",
@@ -181,16 +200,22 @@ def update_status_dialog(clinic, appointment, owners) -> None:
         appointment.status = new_status
         # Keep the mirrored Task in sync with the appointment's status.
         linked_pet, linked_task = _linked_task(owners, appointment)
+        toast_message = f"Appointment status updated to {new_status}"
         if linked_task is not None:
             if new_status == "Completed":
                 linked_task.mark_complete()
             elif new_status == "Cancelled":
                 linked_pet.remove_task(linked_task)
+                if doctor is not None:
+                    freed = freed_slot_label(
+                        appointment.time, linked_task.duration_minutes, doctor.full_name, format_time_12h
+                    )
+                    toast_message = f"Cancelled. This frees up {freed}."
             else:  # Pending / Confirmed -> keep it as an open task
                 linked_task.mark_incomplete()
         save_clinic(clinic)
         save_owners(owners)
-        st.toast(f"Appointment status updated to {new_status}", icon="✅")
+        st.toast(toast_message, icon="✅")
         st.rerun()
 
 

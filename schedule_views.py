@@ -12,6 +12,7 @@ from datetime import date
 
 import streamlit as st
 
+from availability import freed_slot_label
 from pawpal_system import format_time_12h, task_type_icon
 from app_common import (
     PET_TIMELINE_COLORS,
@@ -44,6 +45,12 @@ def _scoped_pairs(owner, categories):
     return pairs
 
 
+def _add_hours(time_str: str, hours: int) -> str:
+    hour, minute = (int(part) for part in time_str.split(":"))
+    hour = min(hour + hours, 23)
+    return f"{hour:02d}:{minute:02d}"
+
+
 def render_todays_schedule_page(
     *,
     page_icon: str,
@@ -51,6 +58,8 @@ def render_todays_schedule_page(
     caption: str,
     categories: set[str] | None,
     include_reason: bool,
+    windowed: bool = False,
+    window_hours: int = 2,
 ) -> None:
     """Render a full today's-schedule page scoped to the given task categories."""
     owner = get_combined_owner()
@@ -89,7 +98,30 @@ def render_todays_schedule_page(
 
     st.subheader(f"{page_icon} {page_title}")
     if todays_tasks:
-        st.table(task_rows(todays_tasks, include_reason=include_reason))
+        if windowed:
+            expanded_key = f"{page_title}_schedule_expanded"
+            if expanded_key not in st.session_state:
+                st.session_state[expanded_key] = False
+
+            if st.session_state[expanded_key]:
+                visible_tasks = todays_tasks
+            else:
+                window_end = _add_hours(todays_tasks[0][1].time, window_hours)
+                visible_tasks = [pair for pair in todays_tasks if pair[1].time <= window_end]
+
+            st.table(task_rows(visible_tasks, include_reason=include_reason))
+            hidden_count = len(todays_tasks) - len(visible_tasks)
+
+            if st.session_state[expanded_key]:
+                if st.button("Show less", key=f"{page_title}_show_less"):
+                    st.session_state[expanded_key] = False
+                    st.rerun()
+            elif hidden_count > 0:
+                if st.button(f"Show more ({hidden_count} more today)", key=f"{page_title}_show_more"):
+                    st.session_state[expanded_key] = True
+                    st.rerun()
+        else:
+            st.table(task_rows(todays_tasks, include_reason=include_reason))
     else:
         st.info("No tasks due today match the current filters.")
 
@@ -177,7 +209,16 @@ def render_todays_schedule_page(
                     pet_to_edit_tasks, task_to_delete = all_tasks[selected_task_index]
                     pet_to_edit_tasks.remove_task(task_to_delete)
                     save_owner(owner)
-                    st.success(f"Deleted {task_to_delete.title}.")
+                    message = f"Deleted {task_to_delete.title}."
+                    if task_to_delete.assignee:
+                        freed = freed_slot_label(
+                            task_to_delete.time,
+                            task_to_delete.duration_minutes,
+                            task_to_delete.assignee,
+                            format_time_12h,
+                        )
+                        message += f" This frees up {freed}."
+                    st.success(message)
                     st.rerun()
         else:
             st.info("No tasks yet.")

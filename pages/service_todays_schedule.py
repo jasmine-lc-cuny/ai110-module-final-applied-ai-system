@@ -8,4 +8,6 @@ render_todays_schedule_page(
     caption="See today's booked services, priorities, and conflicts, and complete, delete, or reopen tasks.",
     categories=SERVICE_CATEGORIES,
     include_reason=False,
+    windowed=True,
+    window_hours=2,
 )
