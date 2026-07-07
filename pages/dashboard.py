@@ -100,52 +100,27 @@ if not all_patients:
     st.info("Add a pet to see their dashboard here.")
     st.page_link("pages/patients.py", label="Go to Patients", icon="🧾")
 else:
-    PET_CATEGORIES = {
-        "🐶 General Companion": ["dog", "cat"],
-        "🐹 Exotic Small Pet": ["rabbit", "bunny", "hamster", "gerbil", "mouse", "mice", "rat", "chinchilla", "guinea pig", "ferret", "hedgehog", "sugar glider", "squirrel"],
-        "🦜 Exotic Avian": ["budgie", "canary", "finch", "parrot", "cockatiel", "conure", "chicken", "duck", "goose", "pigeon", "owl", "falcon", "snowy owl"],
-        "🦎 Reptiles & Amphibians": ["bearded dragon", "leopard gecko", "crested gecko", "chameleon", "iguana", "skink", "turtle", "tortoise", "corn snake", "ball python", "king snake", "frog", "toad", "newt", "salamander"],
-        "🐠 Fish & Invertebrates": ["betta", "guppy", "platy", "swordtail", "molly", "tetra", "goldfish", "danio", "minnow", "cichlid", "pleco", "clownfish", "damselfish", "goby", "blenny"]
-    }
-
     # ==========================================
     # 🔍 THE SEARCH & FILTER ENGINE
     # ==========================================
     st.markdown("### 🔍 Find a Patient")
     search_col, filter_col = st.columns([2, 1])
-    
+
     with search_col:
         search_query = st.text_input("Search by pet or owner name...", placeholder="e.g. Snoopy or Michael", label_visibility="collapsed")
     with filter_col:
-        selected_group = st.selectbox(
-            "Filter by Species Group",
-            options=["All Patients"] + list(PET_CATEGORIES.keys()),
-            label_visibility="collapsed"
-        )
-
-    # --- DYNAMIC SPECIES PILLS ---
-    if selected_group == "All Patients":
-        allowed_species = None
-        selected_species_label = "All"
-    else:
-        raw_species_list = PET_CATEGORIES[selected_group]
-        species_options = ["All"] + [f"{pet_species_icon(s)} {s.capitalize()}" for s in raw_species_list]
-        
-        # This will render a gorgeous pill selector directly under the search bar
         selected_species_label = st.pills(
-            "Filter by specific species",
-            options=species_options,
+            "Filter by species",
+            options=["All", f"{pet_species_icon('dog')} Dog", f"{pet_species_icon('cat')} Cat"],
             default="All",
             key="dashboard_species_pills",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
-        if not selected_species_label or selected_species_label == "All":
-            allowed_species = raw_species_list
-        else:
-            # Extract pure string (e.g. pulling "dog" from "🐕 Dog")
-            target = selected_species_label.split(" ", 1)[-1].lower()
-            allowed_species = [target]
+    if not selected_species_label or selected_species_label == "All":
+        allowed_species = None
+    else:
+        allowed_species = [selected_species_label.split(" ", 1)[-1].lower()]
 
     # Apply the filters
     query_lower = search_query.strip().lower()
@@ -153,15 +128,7 @@ else:
     filtered_patients = []
     for owner, pet in all_patients:
         matches_search = not query_lower or query_lower in pet.name.lower() or query_lower in owner.name.lower()
-        
-        if selected_group == "All Patients":
-            matches_species = True
-        elif "General Companion" in selected_group and (not selected_species_label or selected_species_label == "All"):
-            all_known_species = [s for g in PET_CATEGORIES.values() for s in g]
-            matches_species = pet.species.lower() in allowed_species or pet.species.lower() not in all_known_species
-        else:
-            matches_species = pet.species.lower() in allowed_species
-            
+        matches_species = allowed_species is None or pet.species.lower() in allowed_species
         if matches_search and matches_species:
             filtered_patients.append((owner, pet))
 

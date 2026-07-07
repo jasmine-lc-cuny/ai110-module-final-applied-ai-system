@@ -45,8 +45,6 @@ def test_task_type_icon_heartworm_does_not_false_match_ear_substring():
 def test_pet_species_icon_varies_by_species():
     assert pet_species_icon("dog") == "🐶🐕"
     assert pet_species_icon("cat") == "🐱🐈"
-    assert pet_species_icon("bunny") == "🐰"
-    assert pet_species_icon("iguana") == "🦎"
     assert pet_species_icon("Dog") == "🐶🐕"
     assert pet_species_icon("other") == "🐾"
     assert pet_species_icon("unicorn") == "🐾"
@@ -569,6 +567,13 @@ def test_medication_advisor_never_recommends_species_inappropriate_drug():
     recommendation = recommend_medication("diagnosed with hyperthyroidism", "dog")
 
     assert recommendation.medication is None
+
+
+def test_medication_advisor_blocks_species_outside_the_corpus():
+    recommendation = recommend_medication("diagnosed with osteoarthritis", "rabbit")
+
+    assert recommendation.medication is None
+    assert "rabbit" in recommendation.explanation.lower()
 
 
 def test_medication_advisor_matches_hyperthyroidism_for_cat():

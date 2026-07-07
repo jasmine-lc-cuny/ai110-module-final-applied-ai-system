@@ -82,7 +82,9 @@
 {"timestamp": "2026-07-07T06:47:49", "condition_text": "diagnosed with hyperthyroidism, elevated T4", "species": "cat", "medication": "Methimazole", "label_status": "FDA-approved veterinary label", "confidence": 0.8}
 ```
 
-**Verification performed:** unit-tested `recommend_medication()` directly for all four paths (species-appropriate match, species-blocked mismatch, correct-species success, and an unrecognized-condition fallback); confirmed via Streamlit's `AppTest` against the real seeded demo data that selecting an exotic-species patient (e.g. a tortoise) with a common condition correctly yields no recommendation, and selecting an actual dog patient with "Osteoarthritis / joint pain" correctly renders Carprofen with its real label text and guardrail. Full pytest suite (68 tests, 4 new) still passes.
+**Verification performed:** unit-tested `recommend_medication()` directly for all five paths (species-appropriate match, species-blocked mismatch, a species entirely outside the corpus, correct-species success, and an unrecognized-condition fallback); confirmed via Streamlit's `AppTest` against the real seeded demo data that selecting an actual dog patient with "Osteoarthritis / joint pain" correctly renders Carprofen with its real label text and guardrail. Full pytest suite (69 tests, 5 new) still passes.
+
+**Update:** the app was later narrowed to dogs and cats only — the four exotic-species groups (small pets, avians, reptiles/amphibians, fish/invertebrates) were removed at the user's request, so the demo data no longer contains any non-dog/cat patients. The species-safety guardrail above is unaffected: `recommend_medication()`'s hard species filter still runs the same way, and `test_medication_advisor_blocks_species_outside_the_corpus` now covers that path directly with a constructed species argument rather than relying on a seeded exotic patient.
 
 ## Agent Workflow
 

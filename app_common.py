@@ -135,37 +135,15 @@ def render_category_filters(category: str, display_name: str, owner: Owner, titl
             st.session_state[toggle_key] = True
             st.rerun()
 
-    if category == "veterinary":
-        pet_categories = {
-            "🐶 General Companion": ["dog", "cat"],
-            "🐹 Exotic Small Pet": ["rabbit", "bunny", "hamster", "gerbil", "mouse", "mice", "rat", "chinchilla", "guinea pig", "ferret", "hedgehog", "sugar glider", "squirrel"],
-            "🦜 Exotic Avian": ["budgie", "canary", "finch", "parrot", "cockatiel", "conure", "chicken", "duck", "goose", "pigeon", "owl", "falcon", "snowy owl"],
-            "🦎 Reptiles & Amphibians": ["bearded dragon", "leopard gecko", "crested gecko", "chameleon", "iguana", "skink", "turtle", "tortoise", "corn snake", "ball python", "king snake", "frog", "toad", "newt", "salamander"],
-            "🐠 Fish & Invertebrates": ["betta", "guppy", "platy", "swordtail", "molly", "tetra", "goldfish", "danio", "minnow", "cichlid", "pleco", "clownfish", "damselfish", "goby", "blenny"],
-        }
-        group_options = ["All Groups"] + list(pet_categories.keys())
-        selected_group = st.radio("Filter by Species Group", options=group_options, horizontal=True, key=f"{category}_group_filter")
-        if selected_group == "All Groups":
-            allowed_species = None
-        else:
-            raw_species_list = pet_categories[selected_group]
-            species_options = ["All"] + [f"{pet_species_icon(s)} {s.capitalize()}" for s in raw_species_list]
-            selected_species_label = st.radio("Filter by Species", options=species_options, horizontal=True, key=f"{category}_species_filter")
-            if selected_species_label == "All":
-                allowed_species = raw_species_list
-            else:
-                target = selected_species_label.split(" ", 1)[-1].lower()
-                allowed_species = [target]
-    else:
-        species_filter = st.radio(
-            "Filter by Species",
-            ["All (Dogs & Cats)", "🐕 Dogs", "🐈 Cats"],
-            horizontal=True,
-            key=f"{category}_species_filter"
-        )
-        filter_map = {"🐕 Dogs": "dog", "🐈 Cats": "cat"}
-        target_species = filter_map.get(species_filter)
-        allowed_species = [target_species] if target_species else ["dog", "cat"]
+    species_filter = st.radio(
+        "Filter by Species",
+        ["All (Dogs & Cats)", "🐕 Dogs", "🐈 Cats"],
+        horizontal=True,
+        key=f"{category}_species_filter"
+    )
+    filter_map = {"🐕 Dogs": "dog", "🐈 Cats": "cat"}
+    target_species = filter_map.get(species_filter)
+    allowed_species = [target_species] if target_species else ["dog", "cat"]
 
     owners_with_pets = []
     for candidate in get_owners():

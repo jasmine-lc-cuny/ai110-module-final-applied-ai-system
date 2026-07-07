@@ -28,7 +28,6 @@ DOCTOR_FALLBACKS = [
 REASONS_BY_SPECIES = {
     "dog": ["Annual exam", "Vaccination follow-up", "Ear infection check", "Dental cleaning consult"],
     "cat": ["Annual exam", "Vaccination follow-up", "Weight check", "Dental consult"],
-    "rabbit": ["Nail trim consult", "Digestive health check", "New patient exam"],
 }
 
 STATUS_OPTIONS = ["Pending", "Confirmed", "Completed"]
@@ -70,7 +69,6 @@ def _doctor_for_species(clinic: Clinic, species: str) -> Doctor:
     preferred = {
         "dog": ("general", "primary"),
         "cat": ("general", "primary"),
-        "rabbit": ("internal", "exotic"),
     }.get(species_key)
 
     if preferred:
