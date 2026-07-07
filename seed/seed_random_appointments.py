@@ -5,7 +5,8 @@ from __future__ import annotations
 import random
 import sys
 import argparse
-from datetime import datetime, timedelta, time
+from calendar import monthrange
+from datetime import date, datetime, timedelta, time
 from pathlib import Path
 
 from constants import CATEGORY_TASK_TITLES, CATEGORY_TO_SECTION
@@ -104,31 +105,40 @@ def _staff_for_category(clinic: Clinic, category: str):
     return random.choice(active_staff) if active_staff else None
 
 
+def _month_dates(anchor: datetime) -> list[date]:
+    """Every calendar date in anchor's month (the whole month, not just today
+    forward), so the monthly calendar and day-by-day category pages both have
+    real data to show instead of a single populated day."""
+    days_in_month = monthrange(anchor.year, anchor.month)[1]
+    return [date(anchor.year, anchor.month, day) for day in range(1, days_in_month + 1)]
+
+
 def _seed_service_tasks(owners, clinic: Clinic, anchor: datetime, *, species: str, categories: list[str]) -> int:
-    """Give every matching pet one task in each eligible category, so every
-    service section has coverage every day instead of a random 2-task sample."""
+    """Give every matching pet one task in each eligible category, on every
+    day of the month, so every service section has coverage all month long
+    instead of just today."""
     seeded = 0
+    month_dates = _month_dates(anchor)
     for owner_index, owner in enumerate(owners):
         for pet_index, pet in enumerate(owner.pets):
             if pet.species.lower() != species:
                 continue
 
             pet.tasks = []
-            for task_offset, category in enumerate(categories):
-                titles = CATEGORY_TASK_TITLES.get(category, [])
-                if not titles:
-                    continue
-                title = titles[(owner_index + pet_index + task_offset) % len(titles)]
-                duration, priority, frequency = CATEGORY_TASK_DEFAULTS.get(category, (30, "medium", "once"))
-                assigned_staff = _staff_for_category(clinic, category)
-                due_date = anchor.date()
-                time_str = _time_within_window(
-                    anchor,
-                    offset_minutes=10 + owner_index * 6 + pet_index * 9 + task_offset * 37,
-                    duration_minutes=duration,
-                )
-                pet.add_task(
-                    Task(
+            for day_offset, due_date in enumerate(month_dates):
+                for task_offset, category in enumerate(categories):
+                    titles = CATEGORY_TASK_TITLES.get(category, [])
+                    if not titles:
+                        continue
+                    title = titles[(owner_index + pet_index + task_offset + day_offset) % len(titles)]
+                    duration, priority, frequency = CATEGORY_TASK_DEFAULTS.get(category, (30, "medium", "once"))
+                    assigned_staff = _staff_for_category(clinic, category)
+                    time_str = _time_within_window(
+                        anchor,
+                        offset_minutes=10 + owner_index * 6 + pet_index * 9 + task_offset * 37 + day_offset * 19,
+                        duration_minutes=duration,
+                    )
+                    task = Task(
                         title=title,
                         time=time_str,
                         duration_minutes=duration,
@@ -136,41 +146,81 @@ def _seed_service_tasks(owners, clinic: Clinic, anchor: datetime, *, species: st
                         frequency=frequency,
                         due_date=due_date,
                         category=category,
-                        notes=f"Seeded task near {anchor.strftime('%I:%M %p').lstrip('0')}",
+                        notes=f"Seeded task for {due_date.strftime('%B %d, %Y')}",
                         assignee=assigned_staff.full_name if assigned_staff else None,
                     )
-                )
-                seeded += 1
+                    if due_date < date.today():
+                        task.completed = True
+                    pet.add_task(task)
+                    seeded += 1
     return seeded
 
 
-def _seed_vet_appointments(owners, clinic: Clinic, anchor: datetime) -> list[tuple[str, str, str, datetime, str, str, str]]:
+APPOINTMENTS_PER_DAY = 10
+
+
+def _status_for_date(appt_date: date) -> str:
+    """Past visits read as resolved, today's mix like a real day in progress,
+    future ones are still just scheduled — not just a flat random status."""
+    today = date.today()
+    if appt_date < today:
+        return random.choice(["Completed", "Cancelled"])
+    if appt_date == today:
+        return random.choice(STATUS_OPTIONS)
+    return random.choice(["Pending", "Confirmed"])
+
+
+def _seed_vet_appointments(owners, clinic: Clinic, anchor: datetime) -> list[tuple[str, str, str, date, str, str, str]]:
+    """Spread appointments across every day of the month instead of a single
+    18-pet sample crammed into 3 days, so the clinic calendar has real
+    month-long coverage."""
     clinic.appointments = []
     all_pets = [pet for owner in owners for pet in owner.pets]
     if not all_pets:
         return []
 
     rows = []
-    for index, pet in enumerate(random.sample(all_pets, min(len(all_pets), 18))):
-        owner = next(owner for owner in owners if pet in owner.pets)
-        doctor = _doctor_for_species(clinic, pet.species)
-        due_date = anchor.date() + timedelta(days=index % 3)
-        time_str = _time_within_window(anchor, offset_minutes=20 + index * 17, duration_minutes=30)
-        reason = random.choice(REASONS_BY_SPECIES.get(pet.species.lower(), ["General wellness check", "Follow-up visit"]))
-        status = random.choice(STATUS_OPTIONS)
+    appts_per_day = min(APPOINTMENTS_PER_DAY, len(all_pets))
+    for appt_date in _month_dates(anchor):
+        for slot_index, pet in enumerate(random.sample(all_pets, appts_per_day)):
+            owner = next(owner for owner in owners if pet in owner.pets)
+            doctor = _doctor_for_species(clinic, pet.species)
+            time_str = _time_within_window(anchor, offset_minutes=20 + slot_index * 17, duration_minutes=30)
+            reason = random.choice(REASONS_BY_SPECIES.get(pet.species.lower(), ["General wellness check", "Follow-up visit"]))
+            status = _status_for_date(appt_date)
 
-        clinic.appointments.append(
-            Appointment(
-                owner_name=owner.name,
-                pet_name=pet.name,
-                doctor_username=doctor.username,
-                date=due_date,
-                time=time_str,
-                reason=reason,
-                status=status,
+            clinic.appointments.append(
+                Appointment(
+                    owner_name=owner.name,
+                    pet_name=pet.name,
+                    doctor_username=doctor.username,
+                    date=appt_date,
+                    time=time_str,
+                    reason=reason,
+                    status=status,
+                )
             )
-        )
-        rows.append((owner.name, pet.name, doctor.full_name, due_date, time_str, status, reason))
+            # Mirror as a Task, same as the live Book Appointment dialog does —
+            # otherwise the "veterinary" category has appointments but no
+            # Tasks, so Clinic Today's/Monthly Schedule would stay empty.
+            # Cancelled appointments have no linked task, matching how
+            # cancelling one live removes its mirrored task.
+            if status != "Cancelled":
+                pet.add_task(
+                    Task(
+                        title="Vet Appointment",
+                        time=time_str,
+                        duration_minutes=30,
+                        priority="high",
+                        frequency="once",
+                        notes=reason,
+                        due_date=appt_date,
+                        category="veterinary",
+                        assignee=doctor.full_name,
+                        completed=status == "Completed",
+                    )
+                )
+            rows.append((owner.name, pet.name, doctor.full_name, appt_date, time_str, status, reason))
     return rows
 
 
