@@ -2,6 +2,7 @@ from datetime import date, timedelta
 
 from ai_system import advise_service
 from ai_applied_prediagnostic import assess_symptoms, recommend_doctor
+from ai_applied_medication_advisor import recommend_medication
 from pawpal_system import (
     Appointment,
     Clinic,
@@ -554,6 +555,33 @@ def test_recommend_doctor_falls_back_to_general_practice_when_no_specialist_avai
 
     assert recommendation.success is True
     assert recommendation.doctor.username == "general"
+
+
+def test_medication_advisor_matches_osteoarthritis_for_dog():
+    recommendation = recommend_medication("diagnosed with osteoarthritis, chronic joint pain", "dog")
+
+    assert recommendation.medication == "Carprofen (Rimadyl)"
+    assert recommendation.label_status == "FDA-approved veterinary label"
+    assert recommendation.confidence > 0.5
+
+
+def test_medication_advisor_never_recommends_species_inappropriate_drug():
+    recommendation = recommend_medication("diagnosed with hyperthyroidism", "dog")
+
+    assert recommendation.medication is None
+
+
+def test_medication_advisor_matches_hyperthyroidism_for_cat():
+    recommendation = recommend_medication("diagnosed with hyperthyroidism", "cat")
+
+    assert recommendation.medication == "Methimazole"
+
+
+def test_medication_advisor_falls_back_when_no_condition_matches():
+    recommendation = recommend_medication("some unrelated made-up condition xyz", "dog")
+
+    assert recommendation.medication is None
+    assert "curated" in recommendation.explanation.lower()
 
 
 def test_pet_round_trips_profile_fields():

@@ -58,6 +58,32 @@
 
 **Verification performed:** unit-tested `assess_symptoms()`/`recommend_doctor()` directly for all four paths above; confirmed via Streamlit's `AppTest` that submitting the real assessment form renders the correct department/doctor recommendation and reasoning trace, and that emergency keywords render the red error banner; separately confirmed that `pages/appointments.py`'s booking dialog reads back the one-shot `st.session_state` prefill correctly — the doctor selectbox defaults to the recommended doctor's index and the reason text area is prefilled with the symptom description, then both keys are popped so a later, unrelated booking isn't affected. Full pytest suite (64 tests, 5 new) still passes.
 
+## AI Medication Advisor (Stretch)
+
+**What was built:** `ai_applied_medication_advisor.py` plus a new "AI Medication Advisor" page in the Veterinarian nav section. An owner enters a pet's already-diagnosed condition (from a common-conditions picker or free text), and the system retrieves a matching medication from a curated corpus (`data/medication_guides.csv`, ~38 real medications from [petmd.com/pet-medication](https://www.petmd.com/pet-medication)) — strictly the medication's real labeled indication, never a dose. This is a third distinct RAG use case in the project (alongside `ai_system.py`'s service-task advice and `ai_applied_prediagnostic.py`'s symptom-to-specialty triage), and it takes a firm diagnosis as input rather than raw symptoms or a service category.
+
+**Why this design:** The user explicitly asked to go "strictly by the label," so every corpus entry is tagged with its real label status — `FDA-approved veterinary label` for drugs actually approved for animal use, or `Extra-label (human-labeled drug) used under veterinary direction` for the many commonly-used veterinary medications (e.g. famotidine, gabapentin-style drugs, trazodone) that are technically human-labeled and used off-label in practice. Pretending every entry was equally "on-label" would have been less accurate, not more. The corpus is a curated ~38-medication subset of the full ~200-item source list rather than an attempt at all of them — I was only confident I could state an accurate label indication for well-documented, commonly-prescribed medications; guessing at niche ones (e.g. Zycosan, Varenzin-CA1) risked stating something medically wrong dressed up as "the label." The one guardrail enforced in real code (not just descriptive text) is species safety: `recommend_medication()` filters candidates to the pet's species *before* scoring, as a hard filter — so a medication can never be suggested for a species its entry doesn't list, even if its keywords would otherwise score highest. This was actually exercised for real during testing: the seeded demo data includes many non-dog/cat species (tortoises, hedgehogs, a blenny fish), and a species-mismatched query against them correctly returns no recommendation instead of guessing.
+
+**Trace 1 — correct species-appropriate match** (a dog diagnosed with osteoarthritis correctly gets a dog-labeled NSAID):
+
+```json
+{"timestamp": "2026-07-07T06:47:49", "condition_text": "diagnosed with osteoarthritis, chronic joint pain, confirmed via x-ray", "species": "dog", "medication": "Carprofen (Rimadyl)", "label_status": "FDA-approved veterinary label", "confidence": 0.95}
+```
+
+**Trace 2 — species-safety guardrail blocking a mismatched suggestion** (the corpus's only hyperthyroidism entry, Methimazole, is cat-only; querying it for a dog correctly returns nothing rather than an unsafe guess):
+
+```json
+{"timestamp": "2026-07-07T06:47:49", "condition_text": "diagnosed with hyperthyroidism", "species": "dog", "medication": null, "label_status": null, "confidence": 0.0}
+```
+
+**Trace 3 — same condition, correct species** (the recommendation succeeds once the species actually matches the entry):
+
+```json
+{"timestamp": "2026-07-07T06:47:49", "condition_text": "diagnosed with hyperthyroidism, elevated T4", "species": "cat", "medication": "Methimazole", "label_status": "FDA-approved veterinary label", "confidence": 0.8}
+```
+
+**Verification performed:** unit-tested `recommend_medication()` directly for all four paths (species-appropriate match, species-blocked mismatch, correct-species success, and an unrecognized-condition fallback); confirmed via Streamlit's `AppTest` against the real seeded demo data that selecting an exotic-species patient (e.g. a tortoise) with a common condition correctly yields no recommendation, and selecting an actual dog patient with "Osteoarthritis / joint pain" correctly renders Carprofen with its real label text and guardrail. Full pytest suite (68 tests, 4 new) still passes.
+
 ## Agent Workflow
 
 This project used two different AI coding assistants for two different jobs: Codex built the initial skeleton and backend, and Claude Code (used in the follow-up session covering this log) audited that work against the assignment, fixed what was actually broken, and completed the optional challenges. Codex was then brought back in for one narrow, specific job: acting as the second model in the Challenge 5 comparison below.

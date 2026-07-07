@@ -97,6 +97,7 @@ pg = st.navigation(
             st.Page("pages/clinic_todays_schedule.py", title="Clinic Today's Schedule", icon="📅"),
             st.Page("pages/clinic_monthly_schedule.py", title="Clinic Monthly Schedule", icon="🗓️"),
             st.Page("pages/ai_prediagnostic_assessment.py", title="AI Pre-Diagnostic Assessment", icon="🤖"),
+            st.Page("pages/ai_medication_advisor.py", title="AI Medication Advisor", icon="💊"),
             st.Page("pages/appointments.py", title="Appointments", icon="📋"),
             st.Page("pages/doctors.py", title="Doctors", icon="👩‍⚕️"),
             st.Page("pages/services.py", title="Services", icon="💲"),

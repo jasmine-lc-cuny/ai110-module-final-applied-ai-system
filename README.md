@@ -34,6 +34,7 @@ The assignment's example extension combos, mapped to what's actually implemented
 | Agentic loop + logging | ✅ Implemented (stretch) | `ai_applied_agentic_loop.py` (plan → act → check → revise loop), `logs/agent_traces.jsonl` (reasoning trace log), traces also embedded in `ai_interactions.md` |
 | RAG + validation | 🟡 Partial | `ai_system.py` matches guidance by species/category before returning it, but there's no separate, explicit validation/scoring pass reported back to the user beyond the confidence score |
 | RAG + guardrails + check/revise (stretch) | ✅ Implemented (stretch) | `ai_applied_prediagnostic.py` (symptom → specialty retrieval, a hardcoded emergency-keyword guardrail that's actual enforced code, and a doctor-availability check/revise escalation), `pages/ai_prediagnostic_assessment.py`, `logs/prediagnostic_traces.jsonl` |
+| RAG + guardrails (stretch) | ✅ Implemented (stretch) | `ai_applied_medication_advisor.py` (diagnosed condition → curated medication retrieval, with a hard species-safety filter enforced in code, not just a scoring bonus), `pages/ai_medication_advisor.py`, `logs/medication_advice.jsonl` |
 
 ## Setup
 
@@ -152,6 +153,49 @@ Each assessment and recommendation appends a record to `logs/prediagnostic_trace
 {"timestamp": "2026-07-07T05:26:28", "kind": "recommendation", "department": "Emergency", "success": true, "doctor": "Dr. Ethan Brown", "slot_start": "07:00", "slot_end": "07:30", "trace": [{"action": "plan", "detail": "Matched department 'Emergency': 1 active doctor(s) available."}, {"action": "act", "detail": "Attempt 1: Dr. Ethan Brown has an opening at 07:00-07:30."}]}
 ```
 
+## AI Medication Advisor (Stretch: RAG + Guardrails)
+
+A new "AI Medication Advisor" page in the Veterinarian section lets an owner enter a pet's already-diagnosed condition (from a common-conditions picker or free text), and `ai_applied_medication_advisor.py` retrieves a matching medication from a curated, ~38-entry corpus (`data/medication_guides.csv`) built from [petmd.com/pet-medication](https://www.petmd.com/pet-medication)'s real label indications — never a dose, and strictly from that medication's actual labeled use. Every entry is also tagged with its true label status, since not every commonly-used veterinary drug is actually FDA-approved for animals: entries are marked either `FDA-approved veterinary label` or `Extra-label (human-labeled drug) used under veterinary direction` (e.g. Gabapentin-style human drugs used off-label in practice), so the recommendation is honest about what "the label" actually says. The one guardrail enforced in real code here is species safety: a medication is filtered out of the candidate pool entirely if its entry doesn't list the pet's species — a hard filter, not just a scoring bonus — so a cat can never be recommended a dog-only NSAID (or vice versa) even if its keywords would otherwise score highest.
+
+Real example (correct species-appropriate match):
+
+```text
+Goal: Recommend a medication for a dog diagnosed with osteoarthritis.
+
+Recommended medication: Carprofen (Rimadyl) (confidence 0.95)
+Label status: FDA-approved veterinary label
+Carprofen (Rimadyl) is labeled for control of pain and inflammation
+associated with osteoarthritis and for control of postoperative pain
+following soft tissue and orthopedic surgery in dogs.
+⚠️ NSAID: do not combine with other NSAIDs or steroids; requires baseline
+   bloodwork and periodic monitoring; confirm dosing and suitability with
+   your veterinarian.
+```
+
+Real example (species-safety guardrail blocking a mismatched suggestion):
+
+```text
+Goal: Recommend a medication for a dog diagnosed with hyperthyroidism.
+(Methimazole is the corpus's only hyperthyroidism entry, but it's cat-only.)
+
+Result: No medication in this curated corpus matches that condition. This
+is a small, curated reference, not a full formulary — consult your
+veterinarian.
+
+Goal: Same condition, correct species (cat).
+Recommended medication: Methimazole (confidence 0.80)
+Label status: FDA-approved veterinary label
+Methimazole is labeled for the treatment of hyperthyroidism in cats.
+```
+
+Each recommendation appends a record to `logs/medication_advice.jsonl`; the actual lines written by the three runs above:
+
+```json
+{"timestamp": "2026-07-07T06:47:49", "condition_text": "diagnosed with osteoarthritis, chronic joint pain, confirmed via x-ray", "species": "dog", "medication": "Carprofen (Rimadyl)", "label_status": "FDA-approved veterinary label", "confidence": 0.95}
+{"timestamp": "2026-07-07T06:47:49", "condition_text": "diagnosed with hyperthyroidism", "species": "dog", "medication": null, "label_status": null, "confidence": 0.0}
+{"timestamp": "2026-07-07T06:47:49", "condition_text": "diagnosed with hyperthyroidism, elevated T4", "species": "cat", "medication": "Methimazole", "label_status": "FDA-approved veterinary label", "confidence": 0.8}
+```
+
 ## Reproducible Execution Evidence
 
 All output below is pasted directly from real runs on 2026-07-06, not hand-written. Reproduce it yourself with `pip install -r requirements.txt` followed by the commands shown.
@@ -261,16 +305,17 @@ PASS: Retrieval corpus available
 PASS: Advice layer returned grooming guidance with confidence 0.95
 PASS: Suggested defaults -> Brush Coat, Wash / Bath, Trim Nails
 PASS: Pre-diagnostic assessment matched Emergency guardrail and Dermatology retrieval correctly
+PASS: Medication advisor matched osteoarthritis retrieval and blocked a species-inappropriate suggestion
 ```
 
 ### Automated test suite (`python -m pytest -q`)
 
 ```text
-................................................................         [100%]
-64 passed in 0.08s
+....................................................................     [100%]
+68 passed in 0.09s
 ```
 
-64/64 tests pass, including two dedicated to the AI advice layer (`test_ai_advice_prefers_grooming_defaults_for_cats`, `test_ai_advice_prefers_veterinary_defaults_for_dogs`) and five dedicated to the pre-diagnostic assessment (`test_prediagnostic_matches_dermatology_for_itching`, `test_prediagnostic_forces_emergency_for_emergency_keyword`, `test_prediagnostic_falls_back_to_general_practice_for_unrecognized_text`, `test_recommend_doctor_escalates_when_first_match_is_fully_booked`, `test_recommend_doctor_falls_back_to_general_practice_when_no_specialist_available`), alongside the original PawPal scheduling suite.
+68/68 tests pass, including two dedicated to the AI advice layer (`test_ai_advice_prefers_grooming_defaults_for_cats`, `test_ai_advice_prefers_veterinary_defaults_for_dogs`), five dedicated to the pre-diagnostic assessment (`test_prediagnostic_matches_dermatology_for_itching`, `test_prediagnostic_forces_emergency_for_emergency_keyword`, `test_prediagnostic_falls_back_to_general_practice_for_unrecognized_text`, `test_recommend_doctor_escalates_when_first_match_is_fully_booked`, `test_recommend_doctor_falls_back_to_general_practice_when_no_specialist_available`), and four dedicated to the medication advisor (`test_medication_advisor_matches_osteoarthritis_for_dog`, `test_medication_advisor_never_recommends_species_inappropriate_drug`, `test_medication_advisor_matches_hyperthyroidism_for_cat`, `test_medication_advisor_falls_back_when_no_condition_matches`), alongside the original PawPal scheduling suite.
 
 ## Reliability and Evaluation
 
@@ -286,6 +331,10 @@ The project includes automated tests plus a simple evaluation script for the adv
 - The planner caps itself at 3 staff attempts (`MAX_ATTEMPTS`) rather than searching every staff member indefinitely, so it fails fast and reports why instead of silently hanging on a fully-booked section.
 - The pre-diagnostic assessment matches symptom keywords against `Doctor.department_name` (an existing, already-seeded controlled vocabulary of 15 specialties) rather than introducing a new taxonomy to keep in sync — retrieval and the real doctor roster can never drift apart.
 - The emergency-keyword check is real, hardcoded, always-checked-first code (`EMERGENCY_KEYWORDS` in `ai_applied_prediagnostic.py`), not just descriptive guardrail text in a CSV — a deliberate choice so a genuinely dangerous symptom can't be silently outscored by an unrelated keyword match.
+- The medication advisor's corpus is a curated ~38-medication subset of the full petmd.com list, not all ~200 — every entry needed a label indication I could verify with confidence, and a smaller, defensible corpus beats a larger one with guessed entries for obscure drugs.
+- The medication advisor never states a dose, only the medication and its real labeled condition — dosing depends on weight, species, and other medications, which is squarely a licensed veterinarian's call, not this project's.
+- Species is a hard filter in the medication advisor, applied before scoring, not a bonus added to the score — so a medication can never be suggested for a species its entry doesn't list, even if its keywords would otherwise win.
+- Each medication entry is tagged with its real label status (`FDA-approved veterinary label` vs `Extra-label (human-labeled drug) used under veterinary direction`) rather than presenting every entry as equally "labeled" — several commonly-used veterinary drugs (e.g. gabapentin-style human drugs) are legitimately off-label in animals, and a "strictly by the label" feature should say so.
 
 ## Testing Summary
 
@@ -294,6 +343,7 @@ The project includes automated tests plus a simple evaluation script for the adv
 - The app launches cleanly through Streamlit and the AI advice appears on service and appointment pages.
 - The agentic planner was verified with real (not fabricated) runs covering: a successful same-staff slot search that skips a conflicting time, a cross-staff escalation when the first staff member is fully booked, and both failure paths (no active staff, no task options) — see `ai_interactions.md` for the full traces. Also verified end-to-end via Streamlit's `AppTest`: clicking "Run Auto-Planner" pre-fills the real staff/time widgets (not just displayed text), and submitting the form with those defaults creates the booking successfully.
 - The pre-diagnostic assessment was verified with real (not fabricated) runs covering: a routine specialty match (Orthopedics), the emergency-keyword guardrail overriding the match (Emergency), an unrecognized-symptom fallback (General Practice), and a doctor-escalation when the first matching doctor's day is fully booked — see `ai_interactions.md` for the full traces. Also verified end-to-end via Streamlit's `AppTest`: submitting the symptom form renders the correct recommendation and emergency banner, and the Appointments booking dialog correctly reads back the one-shot `st.session_state` prefill (doctor selectbox defaults to the recommended doctor, reason defaults to the symptom text) and clears it after use.
+- The medication advisor was verified with real (not fabricated) runs covering: a correct species-appropriate match (Carprofen for a dog with osteoarthritis), the species-safety filter blocking a mismatched suggestion (a dog can't get the cat-only hyperthyroidism drug), and the correct match once species is corrected (Methimazole for a cat) — see `ai_interactions.md` for the full traces. Also verified end-to-end via Streamlit's `AppTest` against the actual seeded demo data (which includes many non-dog/cat species like tortoises and hedgehogs): selecting an exotic-species patient and a common condition correctly returned no recommendation rather than an unsafe guess, and selecting a real dog patient correctly returned Carprofen.
 
 ## Notes
 

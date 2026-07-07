@@ -7,6 +7,7 @@ import csv
 
 from ai_system import advise_service
 from ai_applied_prediagnostic import assess_symptoms
+from ai_applied_medication_advisor import recommend_medication
 from constants import CATEGORY_TASK_TITLES
 
 
@@ -36,6 +37,14 @@ def main() -> None:
         print("PASS: Pre-diagnostic assessment matched Emergency guardrail and Dermatology retrieval correctly")
     else:
         print("FAIL: Pre-diagnostic assessment did not match expected departments")
+        raise SystemExit(1)
+
+    dog_oa_medication = recommend_medication("diagnosed with osteoarthritis, chronic joint pain", "dog")
+    species_blocked_medication = recommend_medication("diagnosed with hyperthyroidism", "dog")
+    if dog_oa_medication.medication == "Carprofen (Rimadyl)" and species_blocked_medication.medication is None:
+        print("PASS: Medication advisor matched osteoarthritis retrieval and blocked a species-inappropriate suggestion")
+    else:
+        print("FAIL: Medication advisor did not behave as expected")
         raise SystemExit(1)
 
 
