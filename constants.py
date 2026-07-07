@@ -15,6 +15,7 @@ PAGE_BANNERS = {
     "training": BANNER_DIR / "training.png",
     "walking": BANNER_DIR / "walking.png",
     "special_services": BANNER_DIR / "dog_cafe.png",
+    "pet_adoption": BANNER_DIR / "pet_adoption.png",
 }
 
 APPOINTMENT_STATUS_COLORS = {

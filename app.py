@@ -104,6 +104,9 @@ pg = st.navigation(
             st.Page("pages/services.py", title="Services", icon="💲"),
             st.Page("pages/patients.py", title="Patients", icon="🧾"),
         ],
+        "🐾 PawPal AI Pet Adoption": [
+            st.Page("pages/pet_adoption.py", title="Pet Adoption", icon="🐾"),
+        ],
     }
 )
 pg.run()
