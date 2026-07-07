@@ -14,6 +14,8 @@ The base app manages pets, tasks, recurring routines, and conflict warnings. The
 
 Each booking form also has an agentic planner (`ai_applied_agentic_loop.py`, "🤖 Run Auto-Planner"). Where the retrieval layer above is a single retrieve-then-respond call, the planner is a multi-step loop: it retrieves guidance, proposes a staff member and time slot, checks that proposal against the pet's own existing schedule, and revises — trying the next slot or staff member — if it finds a conflict, before finally setting the form's own staff/time widgets to its choice. Every step of that reasoning is logged to `logs/agent_traces.jsonl`; example traces are in `ai_interactions.md`.
 
+The Veterinarian section also has an AI Pre-Diagnostic Assessment page (`ai_applied_prediagnostic.py`). An owner describes a pet's symptoms, and the system retrieves a matching specialty from its own corpus (`data/symptom_guides.csv`), then recommends a specific active doctor in that department — checking the doctor's real schedule for an open slot today and escalating to the next matching doctor if the first is fully booked. One symptom guardrail here is actual enforced code rather than descriptive text: a hardcoded list of emergency keywords overrides the normal match entirely, always routing to Emergency care regardless of anything else typed. The recommendation is never a diagnosis — it only routes the owner toward a specialist and hands its choice to the existing booking flow.
+
 ## Data
 
 The retrieval corpus is intentionally small and local. It contains service guidance for grooming, sitting, training, walking, dog cafe, and veterinary scenarios. That makes the system easy to inspect and reproduce, but it also limits coverage.
@@ -24,7 +26,7 @@ The advice layer uses simple keyword-style retrieval, so it can miss unusual phr
 
 ## Possible Misuse and Prevention
 
-The app could be misused if someone treated the advice as medical certainty or as a substitute for professional care. To reduce that risk, the system keeps the advice narrow, shows guardrail text, and preserves the user as the final decision-maker.
+The app could be misused if someone treated the advice as medical certainty or as a substitute for professional care. This risk is highest in the AI Pre-Diagnostic Assessment, since it explicitly discusses symptoms — so it is never presented as a diagnosis, always shows a guardrail disclaimer alongside its recommendation, and its one hardcoded emergency-keyword check routes a potentially life-threatening symptom to Emergency care and tells the owner not to wait for a scheduled appointment, rather than silently letting it be outscored by an unrelated keyword. Beyond that, the system keeps all advice narrow, shows guardrail text, and preserves the user as the final decision-maker.
 
 ## Reliability Testing
 

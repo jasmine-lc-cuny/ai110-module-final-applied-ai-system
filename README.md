@@ -33,6 +33,7 @@ The assignment's example extension combos, mapped to what's actually implemented
 | RAG + testing + guardrails | ✅ Implemented (required feature) | `ai_system.py` (retrieval + guardrail text), `evaluate_ai.py` (reliability harness), `tests/test_pawpal.py` (AI-specific tests) |
 | Agentic loop + logging | ✅ Implemented (stretch) | `ai_applied_agentic_loop.py` (plan → act → check → revise loop), `logs/agent_traces.jsonl` (reasoning trace log), traces also embedded in `ai_interactions.md` |
 | RAG + validation | 🟡 Partial | `ai_system.py` matches guidance by species/category before returning it, but there's no separate, explicit validation/scoring pass reported back to the user beyond the confidence score |
+| RAG + guardrails + check/revise (stretch) | ✅ Implemented (stretch) | `ai_applied_prediagnostic.py` (symptom → specialty retrieval, a hardcoded emergency-keyword guardrail that's actual enforced code, and a doctor-availability check/revise escalation), `pages/ai_prediagnostic_assessment.py`, `logs/prediagnostic_traces.jsonl` |
 
 ## Setup
 
@@ -108,6 +109,47 @@ Goal: Auto-plan a grooming booking for Bella, my cat.
 
 Result: Brush Coat with Maya Reyes at 7:25 AM (skipped 7:00 AM, which
         was already booked on Bella's schedule).
+```
+
+## AI Pre-Diagnostic Vet Assessment (Stretch: RAG + Guardrails)
+
+A new "AI Pre-Diagnostic Assessment" page in the Veterinarian section lets an owner answer a short symptom questionnaire (checklist + free text + when it started), then `ai_applied_prediagnostic.py` retrieves a matching specialty from a second, dedicated corpus (`data/symptom_guides.csv`) and recommends a specific active doctor whose `department_name` matches, checking that doctor's real appointments for an open slot today and escalating to the next matching doctor if they're fully booked. Unlike the existing guardrail text in `ai_guides.csv` (descriptive only), this feature has one actual code-enforced guardrail: a hardcoded `EMERGENCY_KEYWORDS` check that overrides the retrieval match entirely — typing "seizure" or "collapse" always routes to Emergency/urgent care regardless of anything else in the text. The recommendation hands off to the existing Appointments booking dialog via a one-shot `st.session_state` prefill (doctor + reason), so the owner doesn't have to re-type anything.
+
+Real example (routine match):
+
+```text
+Goal: Assess a dog that's limping and won't put weight on a back leg.
+
+Suggested specialty: Orthopedics (confidence 0.65)
+Limping and joint stiffness are usually orthopedic in nature. Avoid strenuous
+activity until a vet has evaluated the leg or joint.
+
+[plan] Matched department 'Orthopedics': 1 active doctor(s) available.
+[act]  Attempt 1: Dr. Levi Wilson has an opening at 07:00-07:30.
+
+Result: Recommended Dr. Levi Wilson at 07:00.
+```
+
+Real example (emergency-keyword guardrail overriding the match):
+
+```text
+Goal: Assess a cat that suddenly collapsed and is unresponsive.
+
+🚨 'collapse' indicates a potential emergency. Do not wait for a scheduled
+   appointment; contact an emergency vet immediately.
+Suggested specialty: Emergency (confidence 0.95)
+
+[plan] Matched department 'Emergency': 1 active doctor(s) available.
+[act]  Attempt 1: Dr. Ethan Brown has an opening at 07:00-07:30.
+```
+
+Each assessment and recommendation appends a record to `logs/prediagnostic_traces.jsonl`; the actual lines written by the two runs above:
+
+```json
+{"timestamp": "2026-07-07T05:26:15", "kind": "assessment", "symptom_text": "My dog is limping and wont put weight on his back leg, started 2 days ago after playing at the park", "department": "Orthopedics", "urgency": "routine", "confidence": 0.65}
+{"timestamp": "2026-07-07T05:26:15", "kind": "recommendation", "department": "Orthopedics", "success": true, "doctor": "Dr. Levi Wilson", "slot_start": "07:00", "slot_end": "07:30", "trace": [{"action": "plan", "detail": "Matched department 'Orthopedics': 1 active doctor(s) available."}, {"action": "act", "detail": "Attempt 1: Dr. Levi Wilson has an opening at 07:00-07:30."}]}
+{"timestamp": "2026-07-07T05:26:28", "kind": "assessment", "symptom_text": "My cat suddenly collapsed and seems unresponsive", "department": "Emergency", "urgency": "emergency", "confidence": 0.95}
+{"timestamp": "2026-07-07T05:26:28", "kind": "recommendation", "department": "Emergency", "success": true, "doctor": "Dr. Ethan Brown", "slot_start": "07:00", "slot_end": "07:30", "trace": [{"action": "plan", "detail": "Matched department 'Emergency': 1 active doctor(s) available."}, {"action": "act", "detail": "Attempt 1: Dr. Ethan Brown has an opening at 07:00-07:30."}]}
 ```
 
 ## Reproducible Execution Evidence
@@ -218,16 +260,17 @@ Retrieval guides loaded: 6
 PASS: Retrieval corpus available
 PASS: Advice layer returned grooming guidance with confidence 0.95
 PASS: Suggested defaults -> Brush Coat, Wash / Bath, Trim Nails
+PASS: Pre-diagnostic assessment matched Emergency guardrail and Dermatology retrieval correctly
 ```
 
 ### Automated test suite (`python -m pytest -q`)
 
 ```text
-...........................................................              [100%]
-59 passed in 0.04s
+................................................................         [100%]
+64 passed in 0.08s
 ```
 
-59/59 tests pass, including two dedicated to the AI advice layer (`test_ai_advice_prefers_grooming_defaults_for_cats`, `test_ai_advice_prefers_veterinary_defaults_for_dogs`) alongside the original PawPal scheduling suite.
+64/64 tests pass, including two dedicated to the AI advice layer (`test_ai_advice_prefers_grooming_defaults_for_cats`, `test_ai_advice_prefers_veterinary_defaults_for_dogs`) and five dedicated to the pre-diagnostic assessment (`test_prediagnostic_matches_dermatology_for_itching`, `test_prediagnostic_forces_emergency_for_emergency_keyword`, `test_prediagnostic_falls_back_to_general_practice_for_unrecognized_text`, `test_recommend_doctor_escalates_when_first_match_is_fully_booked`, `test_recommend_doctor_falls_back_to_general_practice_when_no_specialist_available`), alongside the original PawPal scheduling suite.
 
 ## Reliability and Evaluation
 
@@ -241,6 +284,8 @@ The project includes automated tests plus a simple evaluation script for the adv
 - I kept the system deterministic so reviewers can rerun it and get the same structure every time.
 - The agentic planner searches in fixed 15-minute increments (not the task's own duration) so a proposed slot always lands on a value the booking form's Hour/Minute dropdowns can directly preselect — trading a little precision for a plan that's actually usable as a form default, not just a suggestion the user has to re-enter by hand.
 - The planner caps itself at 3 staff attempts (`MAX_ATTEMPTS`) rather than searching every staff member indefinitely, so it fails fast and reports why instead of silently hanging on a fully-booked section.
+- The pre-diagnostic assessment matches symptom keywords against `Doctor.department_name` (an existing, already-seeded controlled vocabulary of 15 specialties) rather than introducing a new taxonomy to keep in sync — retrieval and the real doctor roster can never drift apart.
+- The emergency-keyword check is real, hardcoded, always-checked-first code (`EMERGENCY_KEYWORDS` in `ai_applied_prediagnostic.py`), not just descriptive guardrail text in a CSV — a deliberate choice so a genuinely dangerous symptom can't be silently outscored by an unrelated keyword match.
 
 ## Testing Summary
 
@@ -248,6 +293,7 @@ The project includes automated tests plus a simple evaluation script for the adv
 - `evaluate_ai.py` provides a lightweight reliability check for the applied-AI layer.
 - The app launches cleanly through Streamlit and the AI advice appears on service and appointment pages.
 - The agentic planner was verified with real (not fabricated) runs covering: a successful same-staff slot search that skips a conflicting time, a cross-staff escalation when the first staff member is fully booked, and both failure paths (no active staff, no task options) — see `ai_interactions.md` for the full traces. Also verified end-to-end via Streamlit's `AppTest`: clicking "Run Auto-Planner" pre-fills the real staff/time widgets (not just displayed text), and submitting the form with those defaults creates the booking successfully.
+- The pre-diagnostic assessment was verified with real (not fabricated) runs covering: a routine specialty match (Orthopedics), the emergency-keyword guardrail overriding the match (Emergency), an unrecognized-symptom fallback (General Practice), and a doctor-escalation when the first matching doctor's day is fully booked — see `ai_interactions.md` for the full traces. Also verified end-to-end via Streamlit's `AppTest`: submitting the symptom form renders the correct recommendation and emergency banner, and the Appointments booking dialog correctly reads back the one-shot `st.session_state` prefill (doctor selectbox defaults to the recommended doctor, reason defaults to the symptom text) and clears it after use.
 
 ## Notes
 

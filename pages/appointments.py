@@ -82,6 +82,12 @@ def book_appointment_dialog(owners, clinic) -> None:
         key="book_appt_patient_select",
     )
 
+    # A one-shot prefill from the AI Pre-Diagnostic Assessment page, if the
+    # owner just ran an assessment and clicked through here. Popped
+    # immediately so it doesn't leak into an unrelated later booking.
+    prefill_doctor_username = st.session_state.pop("prediagnostic_recommended_doctor_username", None)
+    prefill_reason = st.session_state.pop("prediagnostic_reason_text", None)
+
     # Same Task + species-aware Reason picker as the veterinary quick-add
     # form above, so booking an appointment captures the same level of
     # detail. key_prefix="book_appt_vet" keeps these widgets' keys distinct
@@ -89,15 +95,22 @@ def book_appointment_dialog(owners, clinic) -> None:
     # screen in the same script run (this dialog floats over the page),
     # so identical keys would crash with DuplicateWidgetID.
     st.write("Reason for Visit")
+    default_title_index = VISIT_REASON_TITLES.index("Other (custom)") if prefill_reason else 0
     visit_title = st.selectbox(
-        "Task", VISIT_REASON_TITLES, key="book_appt_vet_title_select", label_visibility="collapsed"
+        "Task",
+        VISIT_REASON_TITLES,
+        index=default_title_index,
+        key="book_appt_vet_title_select",
+        label_visibility="collapsed",
     )
     selected_species = patient_pairs[patient_index][1].species
     appt_advice = advise_service("veterinary", selected_species, VISIT_REASON_TITLES)
     if appt_advice is not None:
         st.info(f"AI suggestion: {appt_advice.explanation}")
     if visit_title == "Other (custom)":
-        custom_reason = st.text_area("Custom reason", key="book_appt_vet_custom_reason")
+        custom_reason = st.text_area(
+            "Custom reason", value=prefill_reason or "", key="book_appt_vet_custom_reason"
+        )
         visit_reason = None
     else:
         custom_reason = None
@@ -109,10 +122,17 @@ def book_appointment_dialog(owners, clinic) -> None:
         f"{doctor.full_name} — {doctor.specialization}" if doctor.specialization else doctor.full_name
         for doctor in active_doctors
     ]
+    default_doctor_index = 0
+    if prefill_doctor_username:
+        for i, doctor in enumerate(active_doctors):
+            if doctor.username == prefill_doctor_username:
+                default_doctor_index = i
+                break
     doctor_index = st.selectbox(
         "Doctor*",
         range(len(active_doctors)),
         format_func=lambda i: doctor_labels[i],
+        index=default_doctor_index,
         key="book_appt_doctor_select",
     )
     appointment_date = st.date_input("Date*", key="book_appt_date")

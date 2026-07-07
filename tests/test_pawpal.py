@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 from ai_system import advise_service
+from ai_applied_prediagnostic import assess_symptoms, recommend_doctor
 from pawpal_system import (
     Appointment,
     Clinic,
@@ -495,6 +496,64 @@ def test_ai_advice_prefers_veterinary_defaults_for_dogs():
     assert advice is not None
     assert advice.guide.category == "veterinary"
     assert advice.confidence >= 0.55
+
+
+def test_prediagnostic_matches_dermatology_for_itching():
+    assessment = assess_symptoms("My dog keeps scratching and has a rash on his belly")
+
+    assert assessment.department == "Dermatology"
+    assert assessment.urgency == "routine"
+    assert assessment.confidence > 0.5
+
+
+def test_prediagnostic_forces_emergency_for_emergency_keyword():
+    assessment = assess_symptoms("My cat has itching but also had a seizure just now")
+
+    assert assessment.department == "Emergency"
+    assert assessment.urgency == "emergency"
+    assert assessment.confidence == 0.95
+
+
+def test_prediagnostic_falls_back_to_general_practice_for_unrecognized_text():
+    assessment = assess_symptoms("zzz qwlkejr nonsense text")
+
+    assert assessment.department == "General Practice"
+    assert assessment.confidence < 0.5
+
+
+def test_recommend_doctor_escalates_when_first_match_is_fully_booked():
+    clinic = Clinic()
+    clinic.doctors = [
+        Doctor(first_name="Lucas", last_name="Garcia", username="derm1", department_name="Dermatology", specialization="Dermatology", active=True),
+        Doctor(first_name="Ivy", last_name="Stone", username="derm2", department_name="Dermatology", specialization="Dermatology", active=True),
+    ]
+    today = date.today()
+    minute = 7 * 60
+    while minute + 30 <= 20 * 60:
+        hour, mins = divmod(minute, 60)
+        clinic.appointments.append(
+            Appointment(owner_name="X", pet_name="Y", doctor_username="derm1", date=today, time=f"{hour:02d}:{mins:02d}")
+        )
+        minute += 30
+
+    assessment = assess_symptoms("itching and scratching")
+    recommendation = recommend_doctor(assessment, clinic, target_date=today)
+
+    assert recommendation.success is True
+    assert recommendation.doctor.username == "derm2"
+
+
+def test_recommend_doctor_falls_back_to_general_practice_when_no_specialist_available():
+    clinic = Clinic()
+    clinic.doctors = [
+        Doctor(first_name="Ava", last_name="Patel", username="general", department_name="General Practice", specialization="Primary Care", active=True),
+    ]
+
+    assessment = assess_symptoms("itching and scratching")
+    recommendation = recommend_doctor(assessment, clinic, target_date=date.today())
+
+    assert recommendation.success is True
+    assert recommendation.doctor.username == "general"
 
 
 def test_pet_round_trips_profile_fields():

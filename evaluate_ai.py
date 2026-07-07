@@ -6,6 +6,7 @@ from pathlib import Path
 import csv
 
 from ai_system import advise_service
+from ai_applied_prediagnostic import assess_symptoms
 from constants import CATEGORY_TASK_TITLES
 
 
@@ -27,6 +28,14 @@ def main() -> None:
         print(f"PASS: Suggested defaults -> {', '.join(advice.guide.recommended_titles)}")
     else:
         print("FAIL: Retrieval corpus unavailable")
+        raise SystemExit(1)
+
+    emergency_assessment = assess_symptoms("my dog had a seizure and collapsed")
+    normal_assessment = assess_symptoms("itching and scratching a lot")
+    if emergency_assessment.department == "Emergency" and normal_assessment.department == "Dermatology":
+        print("PASS: Pre-diagnostic assessment matched Emergency guardrail and Dermatology retrieval correctly")
+    else:
+        print("FAIL: Pre-diagnostic assessment did not match expected departments")
         raise SystemExit(1)
 
 

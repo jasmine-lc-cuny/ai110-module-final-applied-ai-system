@@ -22,6 +22,42 @@
 
 **Verification performed:** unit-tested `plan_booking()` directly for all four paths (same-staff revision, cross-staff escalation, no-active-staff failure, no-task-options failure); confirmed via Streamlit's `AppTest` that clicking "Run Auto-Planner" on the real Grooming page pre-fills the actual staff-selectbox and hour/minute/period widgets (read back their live values, not just the displayed message) to match the plan; then submitted the form with those agent-picked defaults and confirmed a real booking was created. Full pytest suite (59 tests) still passes.
 
+## AI Pre-Diagnostic Vet Assessment (Stretch)
+
+**What was built:** `ai_applied_prediagnostic.py` plus a new "AI Pre-Diagnostic Assessment" page in the Veterinarian nav section. An owner picks a patient, checks off symptoms (or types free text), and the system retrieves a matching specialty from a dedicated corpus (`data/symptom_guides.csv`, one row per real clinic department) and recommends a specific active doctor in that department — checking the doctor's actual appointments today for an open slot, and escalating to the next matching doctor if the first is fully booked. This is a second, distinct RAG use case from `ai_system.py`'s service-task advice, plus a small check/revise escalation of its own (separate from `ai_applied_agentic_loop.py`'s staff/slot planner, since matching a *specialty* to a symptom and matching a *staff slot* to a pet's calendar are genuinely different decisions). Every assessment and recommendation appends a record to `logs/prediagnostic_traces.jsonl` (gitignored, like the other `logs/` files — traces embedded directly below).
+
+**Why this design:** Symptom keywords are matched against `Doctor.department_name` — an existing controlled vocabulary already seeded for the 15-doctor roster — rather than inventing a new specialty taxonomy that could drift out of sync with the real doctors. The one guardrail that had to be more than descriptive text is the emergency case: `ai_guides.csv`'s guardrail column is just explanatory text appended to a message, which isn't enough if an owner types something like "seizure" alongside an unrelated symptom that might otherwise score higher. So `EMERGENCY_KEYWORDS` in `ai_applied_prediagnostic.py` is checked first and unconditionally overrides the normal keyword-scoring match — the only guardrail in this project that's actual enforced code rather than descriptive text.
+
+**Trace 1 — routine specialty match** (real clinic data; a limping dog correctly routes to Orthopedics):
+
+```json
+{"timestamp": "2026-07-07T05:26:15", "kind": "assessment", "symptom_text": "My dog is limping and wont put weight on his back leg, started 2 days ago after playing at the park", "department": "Orthopedics", "urgency": "routine", "confidence": 0.65}
+{"timestamp": "2026-07-07T05:26:15", "kind": "recommendation", "department": "Orthopedics", "success": true, "doctor": "Dr. Levi Wilson", "slot_start": "07:00", "slot_end": "07:30", "trace": [{"action": "plan", "detail": "Matched department 'Orthopedics': 1 active doctor(s) available."}, {"action": "act", "detail": "Attempt 1: Dr. Levi Wilson has an opening at 07:00-07:30."}]}
+```
+
+**Trace 2 — emergency-keyword guardrail overriding the match** (real clinic data; "collapse" forces Emergency regardless of anything else):
+
+```json
+{"timestamp": "2026-07-07T05:26:28", "kind": "assessment", "symptom_text": "My cat suddenly collapsed and seems unresponsive", "department": "Emergency", "urgency": "emergency", "confidence": 0.95}
+{"timestamp": "2026-07-07T05:26:28", "kind": "recommendation", "department": "Emergency", "success": true, "doctor": "Dr. Ethan Brown", "slot_start": "07:00", "slot_end": "07:30", "trace": [{"action": "plan", "detail": "Matched department 'Emergency': 1 active doctor(s) available."}, {"action": "act", "detail": "Attempt 1: Dr. Ethan Brown has an opening at 07:00-07:30."}]}
+```
+
+**Trace 3 — doctor escalation** (constructed fixture with two Dermatology doctors, since the real seeded roster has exactly one doctor per specialty; the first is fully booked all day, so the agent rejects him and succeeds with the second):
+
+```json
+{"timestamp": "2026-07-07T05:28:40", "kind": "assessment", "symptom_text": "constant itching and scratching for a week", "department": "Dermatology", "urgency": "routine", "confidence": 0.8}
+{"timestamp": "2026-07-07T05:28:40", "kind": "recommendation", "department": "Dermatology", "success": true, "doctor": "Dr. Ivy Stone", "slot_start": "07:00", "slot_end": "07:30", "trace": [{"action": "plan", "detail": "Matched department 'Dermatology': 2 active doctor(s) available."}, {"action": "check", "detail": "Attempt 1: Dr. Lucas Garcia has no open slots today. Trying next candidate."}, {"action": "act", "detail": "Attempt 2: Dr. Ivy Stone has an opening at 07:00-07:30."}]}
+```
+
+**Trace 4 — unrecognized-symptom fallback** (no keyword in the corpus matches, so it falls back to General Practice with low confidence rather than guessing a specialty):
+
+```json
+{"timestamp": "2026-07-07T05:28:40", "kind": "assessment", "symptom_text": "acting a bit off but nothing specific I can point to", "department": "General Practice", "urgency": "routine", "confidence": 0.3}
+{"timestamp": "2026-07-07T05:28:40", "kind": "recommendation", "department": "General Practice", "success": true, "doctor": "Dr. Ava Patel", "trace": [{"action": "plan", "detail": "Matched department 'General Practice': 1 active doctor(s) available."}, {"action": "act", "detail": "Attempt 1: Dr. Ava Patel has an opening at 07:00-07:30."}]}
+```
+
+**Verification performed:** unit-tested `assess_symptoms()`/`recommend_doctor()` directly for all four paths above; confirmed via Streamlit's `AppTest` that submitting the real assessment form renders the correct department/doctor recommendation and reasoning trace, and that emergency keywords render the red error banner; separately confirmed that `pages/appointments.py`'s booking dialog reads back the one-shot `st.session_state` prefill correctly — the doctor selectbox defaults to the recommended doctor's index and the reason text area is prefilled with the symptom description, then both keys are popped so a later, unrelated booking isn't affected. Full pytest suite (64 tests, 5 new) still passes.
+
 ## Agent Workflow
 
 This project used two different AI coding assistants for two different jobs: Codex built the initial skeleton and backend, and Claude Code (used in the follow-up session covering this log) audited that work against the assignment, fixed what was actually broken, and completed the optional challenges. Codex was then brought back in for one narrow, specific job: acting as the second model in the Challenge 5 comparison below.
