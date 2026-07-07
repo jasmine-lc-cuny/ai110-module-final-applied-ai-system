@@ -21,7 +21,6 @@ DOCTOR_ROSTER = [
     ("Noah", "Kim", "surgery", "Surgery", "Soft Tissue Surgery", "DVM, DACVS", 145.0),
     ("Mia", "Johnson", "dent", "Dentistry", "Oral Health", "DVM", 110.0),
     ("Lucas", "Garcia", "derm", "Dermatology", "Dermatology", "DVM", 100.0),
-    ("Zoe", "Martinez", "exotics", "Exotics", "Exotic Animal Medicine", "DVM", 120.0),
     ("Ethan", "Brown", "urgent", "Emergency", "Urgent Care", "DVM", 130.0),
     ("Nora", "Davis", "cardio", "Cardiology", "Cardiology", "DVM, DACVIM", 150.0),
     ("Levi", "Wilson", "ortho", "Orthopedics", "Orthopedic Surgery", "DVM", 135.0),
