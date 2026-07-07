@@ -27,16 +27,19 @@ for group_name, breeds in CAT_BREED_GROUPS.items():
 
 breed_df = pd.DataFrame(rows)
 
-st.sidebar.header("🔍 Filters")
-selected_type = st.sidebar.radio("Select Pet Type:", ["All", "Dog", "Cat"])
+st.subheader("🔍 Filters")
+selected_type = st.radio("Pet Type", ["All", "Dog", "Cat"], horizontal=True, key="breed_directory_type_filter")
 
 if selected_type != "All":
     available_categories = ["All"] + sorted(breed_df[breed_df["Type"] == selected_type]["Category"].unique())
 else:
     available_categories = ["All"] + sorted(breed_df["Category"].unique())
-selected_category = st.sidebar.selectbox("Select Breed Group:", available_categories)
 
-search_query = st.sidebar.text_input("Search Breed Name:", "")
+filter_cols = st.columns(2)
+with filter_cols[0]:
+    selected_category = st.selectbox("Breed Group", available_categories, key="breed_directory_category_filter")
+with filter_cols[1]:
+    search_query = st.text_input("Search Breed Name", "", key="breed_directory_search")
 
 filtered_df = breed_df
 if selected_type != "All":
