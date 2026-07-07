@@ -228,7 +228,7 @@ def render_category_schedule(category: str, display_name: str, category_tasks):
             st.session_state["ui_alert_success"] = msg
             st.rerun()
 
-    st.caption("Completing, deleting, and reopening tasks lives on \"Today's Schedule\".")
+    st.caption("Completing, deleting, and reopening tasks lives on \"Service Today's Schedule\".")
 
 
 def render_category_page(

@@ -51,7 +51,7 @@ def home_page():
     st.divider()
     st.page_link(
         "pages/dashboard.py",
-        label="📊 Dashboard - 🐾 Pet Profile",
+        label="🐾 Pet Profile",
         icon="➡️",
         use_container_width=True,
     )
@@ -79,13 +79,12 @@ pg = st.navigation(
     {
         "": [st.Page(home_page, title="Home", icon="🏠", url_path="home", default=True)],
         "🐾 PawPal Manage": [
-            st.Page("pages/dashboard.py", title="Dashboard - Pet Profile", icon="📊"),
-            st.Page("pages/todays_schedule.py", title="Today's Schedule", icon="📅"),
-            st.Page("pages/calendar.py", title="Calendar", icon="🗓️"),
-            st.Page("pages/task.py", title="Task Hub", icon="📝"),
+            st.Page("pages/dashboard.py", title="Pet Profile", icon="📊"),
         ],
         "🛎️ Book a Service": [
             st.Page("pages/book_service_dashboard.py", title="Service Dashboard", icon="🛎️"),
+            st.Page("pages/service_todays_schedule.py", title="Service Today's Schedule", icon="📅"),
+            st.Page("pages/service_monthly_schedule.py", title="Service Monthly Schedule", icon="🗓️"),
             st.Page("pages/grooming.py", title="Grooming", icon="🛁"),
             st.Page("pages/sitting.py", title="Sitting", icon="🏠"),
             st.Page("pages/training.py", title="Training", icon="🎓"),
@@ -95,6 +94,8 @@ pg = st.navigation(
         ],
         "🩺 Veterinarian": [
             st.Page("pages/clinic_dashboard.py", title="Clinic Dashboard", icon="🏥"),
+            st.Page("pages/clinic_todays_schedule.py", title="Clinic Today's Schedule", icon="📅"),
+            st.Page("pages/clinic_monthly_schedule.py", title="Clinic Monthly Schedule", icon="🗓️"),
             st.Page("pages/appointments.py", title="Appointments", icon="📋"),
             st.Page("pages/doctors.py", title="Doctors", icon="👩‍⚕️"),
             st.Page("pages/services.py", title="Services", icon="💲"),

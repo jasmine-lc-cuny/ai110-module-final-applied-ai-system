@@ -92,7 +92,7 @@ def render_appointment_reason_card(pet) -> None:
 owners = get_owners()
 all_patients = [(owner, pet) for owner in owners for pet in owner.pets]
 
-st.title("📊 Dashboard - 🐾 Pet Profile")
+st.title("🐾 Pet Profile")
 st.caption("Search for a patient to view their complete clinical overview and profile.")
 render_live_clock("Pet Profile dashboard")
 

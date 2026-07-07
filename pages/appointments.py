@@ -135,7 +135,7 @@ def book_appointment_dialog(owners, clinic) -> None:
             )
         )
         # Mirror the appointment as a Task on the pet so it also shows up on the
-        # Calendar, Today's Schedule, and Task page, and feeds conflict detection.
+        # Clinic Today's/Monthly Schedule pages, and feeds conflict detection.
         pet.add_task(
             Task(
                 title=visit_title if visit_title != "Other (custom)" else "Vet Appointment",
