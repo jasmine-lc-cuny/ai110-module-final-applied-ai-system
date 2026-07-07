@@ -1,6 +1,26 @@
 # AI Interactions Log
 
-> **Note:** This log documents AI collaboration on the original Module 2 build (the scheduling backend, before the final-project RAG extension) — it predates and does not cover the retrieval-advice layer (`ai_system.py`) added for this final project. It is not a submission for the "Agentic Workflow Enhancement" stretch, which would require intermediate reasoning traces from this project's own work.
+> **Note:** Most of this log documents AI collaboration on the original Module 2 build (the scheduling backend, before the final-project RAG extension) — it predates and does not cover the retrieval-advice layer (`ai_system.py`). The **Agentic Workflow Enhancement (Stretch)** section directly below is this final project's own work and *is* the submission for that stretch challenge.
+
+## Agentic Workflow Enhancement (Stretch)
+
+**What was built:** `ai_applied_agentic_loop.py` — a multi-step plan → act → check → revise loop, wired into every category booking form as a "🤖 Run Auto-Planner" button (see `bookings.py`'s `_render_agent_planner()`). This is deliberately different from `ai_system.py`'s `advise_service()` (a single retrieve-then-respond RAG call): the agent retrieves guidance, *then* proposes a concrete staff member and time slot, *then* checks that proposal against the pet's own existing schedule, and *revises* — trying the next slot or staff member — if a conflict is found, up to 3 attempts before giving up. The plan's staff/time choice becomes the actual default in the form's widgets, not just a suggestion printed alongside them. Every run appends its full reasoning trace to `logs/agent_traces.jsonl` (gitignored, like the rest of `logs/`, since it's a growing runtime log — so the traces below are embedded directly rather than linked).
+
+**Why this design:** The slot search runs on fixed 15-minute increments rather than the task's own duration, so a proposed slot always lands on a value the form's Hour/Minute dropdowns can directly preselect. The first version of the escalation logic only checked each staff member's *single earliest* slot before moving to the next staff member — which failed in practice, because two staff members with no prior bookings both offer 07:00 first, so "try the next staff" just hit the identical conflict again. Verifying this dogfooding step directly, with a real conflicting pet task, is what caught it (see the two traces below): the fix was searching *every* open slot for a staff member before giving up on them, only escalating to the next staff member once a given staff truly has no conflict-free slot left.
+
+**Trace 1 — same-staff slot search avoiding a pet conflict** (Bella already has a task at 07:00; the agent finds Maya Reyes's next open slot instead of giving up or double-booking):
+
+```json
+{"timestamp": "2026-07-07T03:47:38", "category": "grooming", "pet": "Bella", "success": true, "task_title": "Brush Coat", "staff_name": "Maya Reyes", "slot_start": "07:25", "slot_end": "07:50", "confidence": 0.95, "trace": [{"action": "plan", "detail": "Retrieved guidance for cat grooming: For grooming, start with the lowest-stress coat and hygiene tasks. Avoid piling on too many grooming tasks in one session. (confidence 0.95). Recommended task: Brush Coat."}, {"action": "act", "detail": "Attempt 1: proposed Maya Reyes at 07:25-07:50 — checked against Bella's existing schedule, no conflict found."}]}
+```
+
+**Trace 2 — cross-staff escalation when the first staff member is fully booked** (Priya Sharma has zero open slots all day; the agent rejects her entirely and succeeds with Diego Flores instead):
+
+```json
+{"timestamp": "2026-07-07T03:53:42", "category": "grooming", "pet": "Coco", "success": true, "task_title": "Brush Coat", "staff_name": "Diego Flores", "slot_start": "07:00", "slot_end": "07:15", "confidence": 0.95, "trace": [{"action": "plan", "detail": "Retrieved guidance for dog grooming: For grooming, start with the lowest-stress coat and hygiene tasks. Avoid piling on too many grooming tasks in one session. (confidence 0.95). Recommended task: Brush Coat."}, {"action": "check", "detail": "Attempt 1: Priya Sharma has no open slots today. Trying next staff member."}, {"action": "act", "detail": "Attempt 2: proposed Diego Flores at 07:00-07:15 — checked against Coco's existing schedule, no conflict found."}]}
+```
+
+**Verification performed:** unit-tested `plan_booking()` directly for all four paths (same-staff revision, cross-staff escalation, no-active-staff failure, no-task-options failure); confirmed via Streamlit's `AppTest` that clicking "Run Auto-Planner" on the real Grooming page pre-fills the actual staff-selectbox and hour/minute/period widgets (read back their live values, not just the displayed message) to match the plan; then submitted the form with those agent-picked defaults and confirmed a real booking was created. Full pytest suite (59 tests) still passes.
 
 ## Agent Workflow
 

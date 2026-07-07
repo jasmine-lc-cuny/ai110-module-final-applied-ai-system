@@ -12,6 +12,8 @@ PawPal+ is a classroom portfolio project that combines a pet-care scheduler with
 
 The base app manages pets, tasks, recurring routines, and conflict warnings. The applied AI layer retrieves guidance from a local corpus before making booking suggestions, then returns a recommendation, a short explanation, and a confidence score. The app uses that advice to preselect task options and show users why the choice was suggested.
 
+Each booking form also has an agentic planner (`ai_applied_agentic_loop.py`, "🤖 Run Auto-Planner"). Where the retrieval layer above is a single retrieve-then-respond call, the planner is a multi-step loop: it retrieves guidance, proposes a staff member and time slot, checks that proposal against the pet's own existing schedule, and revises — trying the next slot or staff member — if it finds a conflict, before finally setting the form's own staff/time widgets to its choice. Every step of that reasoning is logged to `logs/agent_traces.jsonl`; example traces are in `ai_interactions.md`.
+
 ## Data
 
 The retrieval corpus is intentionally small and local. It contains service guidance for grooming, sitting, training, walking, dog cafe, and veterinary scenarios. That makes the system easy to inspect and reproduce, but it also limits coverage.

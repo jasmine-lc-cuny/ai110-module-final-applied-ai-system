@@ -9,7 +9,7 @@ from calendar import monthrange
 from datetime import date, datetime, timedelta, time
 from pathlib import Path
 
-from constants import CATEGORY_TASK_TITLES, CATEGORY_TO_SECTION
+from constants import CATEGORY_TASK_DEFAULTS, CATEGORY_TASK_TITLES, CATEGORY_TO_SECTION
 from pawpal_system import Appointment, Clinic, Doctor, Task, load_owners_from_json, save_owners_to_json
 
 DATA_PATH = Path("data.json")
@@ -32,18 +32,6 @@ REASONS_BY_SPECIES = {
 }
 
 STATUS_OPTIONS = ["Pending", "Confirmed", "Completed"]
-
-# One task per pet per eligible category per day, using the same full task
-# lists the live booking form offers (constants.CATEGORY_TASK_TITLES) instead
-# of a narrow hand-picked subset — otherwise the seeded demo only ever shows
-# 1-2 of each category's real task variety.
-CATEGORY_TASK_DEFAULTS = {
-    "walking": (30, "medium", "daily"),
-    "grooming": (25, "medium", "once"),
-    "training": (45, "high", "once"),
-    "special_services": (15, "medium", "daily"),
-    "sitting": (60, "medium", "once"),
-}
 
 DOG_SERVICE_CATEGORIES = ["walking", "grooming", "training", "special_services"]
 CAT_SERVICE_CATEGORIES = ["grooming", "sitting"]

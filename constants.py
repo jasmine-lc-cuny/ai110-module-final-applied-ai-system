@@ -250,3 +250,13 @@ CATEGORY_TO_SECTION = {
     "walking": "Walking",
     "special_services": "Dog Cafes",
 }
+
+# (duration_minutes, priority, frequency) defaults per category — shared by
+# the seeder and the agentic booking planner so both use the same durations.
+CATEGORY_TASK_DEFAULTS = {
+    "walking": (30, "medium", "daily"),
+    "grooming": (25, "medium", "once"),
+    "training": (45, "high", "once"),
+    "special_services": (15, "medium", "daily"),
+    "sitting": (60, "medium", "once"),
+}

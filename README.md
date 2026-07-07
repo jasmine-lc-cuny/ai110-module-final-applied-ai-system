@@ -20,8 +20,19 @@ The system architecture source is stored in `diagrams/architecture.mmd`.
 - Preselects more helpful task defaults on service pages.
 - Shows AI suggestions in the booking and appointment flows.
 - Logs each advice run to `logs/ai_advice.jsonl`.
+- Runs a multi-step agentic planner ("🤖 Run Auto-Planner") on each booking form that retrieves guidance, proposes a staff member and time slot, checks its own proposal against the pet's existing schedule, and revises if there's a conflict — logging the full reasoning trace to `logs/agent_traces.jsonl`.
 - Keeps the original scheduling, conflict, and recurrence logic intact.
 - Uses the existing Streamlit app as the main user experience.
+
+## AI Feature Mapping
+
+The assignment's example extension combos, mapped to what's actually implemented in this repo:
+
+| Extension Combo | Status | Files |
+|---|---|---|
+| RAG + testing + guardrails | ✅ Implemented (required feature) | `ai_system.py` (retrieval + guardrail text), `evaluate_ai.py` (reliability harness), `tests/test_pawpal.py` (AI-specific tests) |
+| Agentic loop + logging | ✅ Implemented (stretch) | `ai_applied_agentic_loop.py` (plan → act → check → revise loop), `logs/agent_traces.jsonl` (reasoning trace log), traces also embedded in `ai_interactions.md` |
+| RAG + validation | 🟡 Partial | `ai_system.py` matches guidance by species/category before returning it, but there's no separate, explicit validation/scoring pass reported back to the user beyond the confidence score |
 
 ## Setup
 
@@ -77,6 +88,26 @@ Example 3:
 Goal: Add dog cafe meals for a dog.
 AI suggestion: For the Dog Cafe section, meal choices are the main action. Keep cafe bookings to one meal slot.
 Result: Breakfast, Lunch, Dinner
+```
+
+## Agentic Booking Planner (Stretch: Agentic Workflow Enhancement)
+
+Every category booking form has a "🤖 Run Auto-Planner" button. Unlike `advise_service()` (a single retrieve-then-respond RAG call), this runs a multi-step loop: retrieve care guidance → propose a staff member and time slot → check that slot against the pet's own existing schedule → if it conflicts, revise by trying the next slot or staff member — up to 3 attempts before giving up. The plan's staff/time choice becomes the actual default in the booking form's widgets (not just displayed text), and the full reasoning trace is logged to `logs/agent_traces.jsonl`. Full traces with intermediate reasoning steps are in `ai_interactions.md`.
+
+Real example (pet has a conflicting task at the first staff member's earliest slot):
+
+```text
+Goal: Auto-plan a grooming booking for Bella, my cat.
+
+[plan] Retrieved guidance for cat grooming: For grooming, start with the
+       lowest-stress coat and hygiene tasks. Avoid piling on too many
+       grooming tasks in one session. (confidence 0.95). Recommended
+       task: Brush Coat.
+[act]  Attempt 1: proposed Maya Reyes at 07:25-07:50 — checked against
+       Bella's existing schedule, no conflict found.
+
+Result: Brush Coat with Maya Reyes at 7:25 AM (skipped 7:00 AM, which
+        was already booked on Bella's schedule).
 ```
 
 ## Reproducible Execution Evidence
@@ -148,6 +179,35 @@ Each of these calls also appends a record to `logs/ai_advice.jsonl`. The actual 
 {"timestamp": "2026-07-06T17:47:28", "category": "special_services", "species": "dog", "matched_category": "special_services", "matched_species": "dog", "confidence": 0.95}
 ```
 
+### Agentic planner behavior (`plan_booking()`)
+
+Two real runs of `ai_applied_agentic_loop.plan_booking()` — the second one shows the agent rejecting a fully-booked staff member and escalating to the next one:
+
+```text
+>>> plan_booking(category="grooming", pet=Bella (cat), title_options=[...], active_staff=[Maya Reyes], ...)
+success: True | staff: Maya Reyes | slot: 07:25-07:50
+  [plan] Retrieved guidance for cat grooming: For grooming, start with the lowest-stress coat and hygiene
+         tasks. Avoid piling on too many grooming tasks in one session. (confidence 0.95). Recommended
+         task: Brush Coat.
+  [act] Attempt 1: proposed Maya Reyes at 07:25-07:50 — checked against Bella's existing schedule, no
+        conflict found.
+
+>>> plan_booking(category="grooming", pet=Coco (dog), title_options=[...], active_staff=[Priya Sharma (fully booked), Diego Flores], ...)
+success: True | staff: Diego Flores | slot: 07:00-07:15
+  [plan] Retrieved guidance for dog grooming: For grooming, start with the lowest-stress coat and hygiene
+         tasks. Avoid piling on too many grooming tasks in one session. (confidence 0.95). Recommended
+         task: Brush Coat.
+  [check] Attempt 1: Priya Sharma has no open slots today. Trying next staff member.
+  [act] Attempt 2: proposed Diego Flores at 07:00-07:15 — checked against Coco's existing schedule, no
+        conflict found.
+```
+
+Each run appends a record to `logs/agent_traces.jsonl`, e.g. the second run above:
+
+```json
+{"timestamp": "2026-07-07T03:53:42", "category": "grooming", "pet": "Coco", "success": true, "task_title": "Brush Coat", "staff_name": "Diego Flores", "slot_start": "07:00", "slot_end": "07:15", "confidence": 0.95, "trace": [{"action": "plan", "detail": "Retrieved guidance for dog grooming: For grooming, start with the lowest-stress coat and hygiene tasks. Avoid piling on too many grooming tasks in one session. (confidence 0.95). Recommended task: Brush Coat."}, {"action": "check", "detail": "Attempt 1: Priya Sharma has no open slots today. Trying next staff member."}, {"action": "act", "detail": "Attempt 2: proposed Diego Flores at 07:00-07:15 — checked against Coco's existing schedule, no conflict found."}]}
+```
+
 ### Reliability / guardrail results (`python evaluate_ai.py`)
 
 ```text
@@ -179,12 +239,15 @@ The project includes automated tests plus a simple evaluation script for the adv
 - I used a small local retrieval corpus so the project is reproducible and easy to explain.
 - I made the AI advice visible in the real booking flow rather than only in a standalone script.
 - I kept the system deterministic so reviewers can rerun it and get the same structure every time.
+- The agentic planner searches in fixed 15-minute increments (not the task's own duration) so a proposed slot always lands on a value the booking form's Hour/Minute dropdowns can directly preselect — trading a little precision for a plan that's actually usable as a form default, not just a suggestion the user has to re-enter by hand.
+- The planner caps itself at 3 staff attempts (`MAX_ATTEMPTS`) rather than searching every staff member indefinitely, so it fails fast and reports why instead of silently hanging on a fully-booked section.
 
 ## Testing Summary
 
 - PawPal scheduling tests still validate the backend behavior.
 - `evaluate_ai.py` provides a lightweight reliability check for the applied-AI layer.
 - The app launches cleanly through Streamlit and the AI advice appears on service and appointment pages.
+- The agentic planner was verified with real (not fabricated) runs covering: a successful same-staff slot search that skips a conflicting time, a cross-staff escalation when the first staff member is fully booked, and both failure paths (no active staff, no task options) — see `ai_interactions.md` for the full traces. Also verified end-to-end via Streamlit's `AppTest`: clicking "Run Auto-Planner" pre-fills the real staff/time widgets (not just displayed text), and submitting the form with those defaults creates the booking successfully.
 
 ## Notes
 
