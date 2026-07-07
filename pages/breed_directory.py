@@ -1,9 +1,9 @@
-"""PawPal AI Pet Adoption: a breed-personality browser to help a prospective
-adopter find a dog or cat breed that matches the temperament they want.
+"""Breed Directory: a searchable, filterable reference table covering every
+dog and cat breed in the clinic's roster, with personality traits.
 
-Uses the same breed_personality.py lookup table as the Breed Directory page,
-just themed and filtered for the adoption use case (its own nav section,
-per the user's request, rather than folded into Breed Directory).
+Lives under the "PawPal AI Pet Adoption" nav section (its own top-level
+section, per the user's request) and uses the same breed_personality.py
+lookup table as the Pet Profile / Patients pages.
 """
 
 import pandas as pd
@@ -14,9 +14,9 @@ from breed_personality import CAT_BREED_GROUPS, CAT_BREED_PERSONALITIES, DOG_BRE
 from ui_helpers import render_page_banner
 
 render_page_banner("pet_adoption")
-st.title("🐾 PawPal AI Pet Adoption")
-st.caption("Browse dog and cat breeds by personality to find your best match.")
-render_live_clock("PawPal AI Pet Adoption")
+st.title("📖 Breed Directory")
+st.caption("Browse dog and cat breeds by personality traits to find your match.")
+render_live_clock("Breed Directory")
 
 rows = []
 for group_name, breeds in DOG_BREED_GROUPS.items():
@@ -28,8 +28,8 @@ for group_name, breeds in CAT_BREED_GROUPS.items():
 
 breed_df = pd.DataFrame(rows)
 
-st.subheader("🔍 Find Your Match")
-selected_type = st.radio("Pet Type", ["All", "Dog", "Cat"], horizontal=True, key="pet_adoption_type_filter")
+st.subheader("🔍 Filters")
+selected_type = st.radio("Pet Type", ["All", "Dog", "Cat"], horizontal=True, key="breed_directory_type_filter")
 
 if selected_type != "All":
     available_categories = ["All"] + sorted(breed_df[breed_df["Type"] == selected_type]["Category"].unique())
@@ -38,9 +38,9 @@ else:
 
 filter_cols = st.columns(2)
 with filter_cols[0]:
-    selected_category = st.selectbox("Breed Group", available_categories, key="pet_adoption_category_filter")
+    selected_category = st.selectbox("Breed Group", available_categories, key="breed_directory_category_filter")
 with filter_cols[1]:
-    search_query = st.text_input("Search by trait or breed (e.g. 'gentle', 'Poodle')", "", key="pet_adoption_search")
+    search_query = st.text_input("Search by trait or breed (e.g. 'gentle', 'Poodle')", "", key="breed_directory_search")
 
 filtered_df = breed_df
 if selected_type != "All":
