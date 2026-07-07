@@ -10,6 +10,7 @@ from datetime import date, datetime, timedelta, time
 from pathlib import Path
 
 from constants import CATEGORY_TASK_DEFAULTS, CATEGORY_TASK_TITLES, CATEGORY_TO_SECTION
+from grooming_duration import grooming_duration_minutes
 from pawpal_system import Appointment, Clinic, Doctor, Task, load_owners_from_json, save_owners_to_json
 
 DATA_PATH = Path("data.json")
@@ -32,8 +33,11 @@ REASONS_BY_SPECIES = {
 
 STATUS_OPTIONS = ["Pending", "Confirmed", "Completed"]
 
-DOG_SERVICE_CATEGORIES = ["walking", "grooming", "training", "special_services"]
-CAT_SERVICE_CATEGORIES = ["grooming", "sitting"]
+# Grooming isn't in either list — it's scheduled separately by
+# _seed_grooming_appointments(), which sizes each visit's duration to the
+# pet instead of using one flat per-category duration.
+DOG_SERVICE_CATEGORIES = ["walking", "training", "special_services"]
+CAT_SERVICE_CATEGORIES = ["sitting"]
 DAY_START_MINUTES = 7 * 60
 DAY_END_MINUTES = 20 * 60
 
@@ -43,6 +47,10 @@ def _round_up_to_quarter(moment: datetime) -> datetime:
     if minutes == 60:
         return moment.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
     return moment.replace(minute=minutes, second=0, microsecond=0)
+
+
+def _minutes_to_hhmm(minutes: int) -> str:
+    return f"{minutes // 60:02d}:{minutes % 60:02d}"
 
 
 def _time_within_window(day: datetime, offset_minutes: int, duration_minutes: int = 0) -> str:
@@ -139,6 +147,65 @@ def _seed_service_tasks(owners, clinic: Clinic, anchor: datetime, *, species: st
                         task.completed = True
                     pet.add_task(task)
                     seeded += 1
+    return seeded
+
+
+def _seed_grooming_appointments(owners, clinic: Clinic, anchor: datetime) -> int:
+    """Give every dog and cat roughly one realistic grooming visit sometime
+    during the month, spread evenly across days and booked back-to-back into
+    an actual groomer's day without exceeding business hours. Each visit's
+    duration is sized to the pet (breed/weight for dogs, a shorter flat range
+    for cats) instead of one flat per-category duration, and a groomer's day
+    only gets as many visits as realistically fit in 7 AM-8 PM."""
+    section = CATEGORY_TO_SECTION["grooming"]
+    groomers = [member for member in clinic.staff_in_section(section) if member.active] or clinic.staff_in_section(section)
+    if not groomers:
+        return 0
+
+    eligible_pets = [
+        (owner_index, pet_index, pet)
+        for owner_index, owner in enumerate(owners)
+        for pet_index, pet in enumerate(owner.pets)
+        if pet.species.lower() in ("dog", "cat")
+    ]
+    if not eligible_pets:
+        return 0
+
+    random.shuffle(eligible_pets)
+    month_dates = _month_dates(anchor)
+    titles = CATEGORY_TASK_TITLES.get("grooming", [])
+
+    seeded = 0
+    for day_index, due_date in enumerate(month_dates):
+        # Slice with a step of len(month_dates) spreads pets ~evenly across
+        # every day of the month instead of clustering them all in week one.
+        day_pets = eligible_pets[day_index::len(month_dates)]
+        groomer_end_minutes = {groomer.username: DAY_START_MINUTES for groomer in groomers}
+
+        for owner_index, pet_index, pet in day_pets:
+            groomer = min(groomers, key=lambda g: groomer_end_minutes[g.username])
+            duration = grooming_duration_minutes(pet.species, pet.breed, pet.weight)
+            start_minute = groomer_end_minutes[groomer.username]
+            if start_minute + duration > DAY_END_MINUTES:
+                continue  # every groomer's day is full; skip rather than overbook
+
+            title = titles[(owner_index + pet_index) % len(titles)] if titles else "Grooming"
+            task = Task(
+                title=title,
+                time=_minutes_to_hhmm(start_minute),
+                duration_minutes=duration,
+                priority="medium",
+                frequency="once",
+                due_date=due_date,
+                category="grooming",
+                notes=f"Seeded task for {due_date.strftime('%B %d, %Y')}",
+                assignee=groomer.full_name,
+            )
+            if due_date < date.today():
+                task.completed = True
+            pet.add_task(task)
+            groomer_end_minutes[groomer.username] = start_minute + duration
+            seeded += 1
     return seeded
 
 
@@ -242,6 +309,11 @@ def seed_random_appointments(mode: str = "services") -> None:
         service_task_count += _seed_service_tasks(owners, clinic, anchor, species="dog", categories=DOG_SERVICE_CATEGORIES)
     if mode in {"services", "all", "cats"}:
         service_task_count += _seed_service_tasks(owners, clinic, anchor, species="cat", categories=CAT_SERVICE_CATEGORIES)
+    if mode in {"services", "all", "dogs", "cats"}:
+        # Runs after both species passes above, since _seed_service_tasks
+        # wipes each matching pet's tasks — grooming would be erased if it
+        # ran first.
+        service_task_count += _seed_grooming_appointments(owners, clinic, anchor)
 
     if mode in {"all", "vet"}:
         appointment_rows = _seed_vet_appointments(owners, clinic, anchor)

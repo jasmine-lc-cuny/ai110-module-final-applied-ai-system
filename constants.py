@@ -253,9 +253,10 @@ CATEGORY_TO_SECTION = {
 
 # (duration_minutes, priority, frequency) defaults per category — shared by
 # the seeder and the agentic booking planner so both use the same durations.
+# Grooming isn't here: its duration is size/species-dependent, computed by
+# grooming_duration.py instead of a flat per-category default.
 CATEGORY_TASK_DEFAULTS = {
     "walking": (30, "medium", "daily"),
-    "grooming": (25, "medium", "once"),
     "training": (45, "high", "once"),
     "special_services": (15, "medium", "daily"),
     "sitting": (60, "medium", "once"),

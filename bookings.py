@@ -8,6 +8,7 @@ from ai_applied_agentic_loop import plan_booking
 from ai_system import advise_service
 from availability import find_available_slots
 from constants import CATEGORY_TASK_TITLES
+from grooming_duration import grooming_duration_minutes
 from pawpal_system import Task, format_time_12h
 from pickers import render_dog_cafe_menu_picker, render_veterinary_reason_picker
 from state import get_combined_owner, save_owner
@@ -144,6 +145,14 @@ def render_category_booking_form(category: str, display_name: str, active_staff,
         if f"{plan_minute:02d}" in minute_options:
             default_minute_index = minute_options.index(f"{plan_minute:02d}")
 
+    # Grooming's realistic duration scales heavily with the pet's size and
+    # coat (see grooming_duration.py), so default it to that instead of a
+    # flat number that's wrong for a Great Dane and wrong for a Chihuahua.
+    if category == "grooming":
+        default_duration = grooming_duration_minutes(selected_pet.species, selected_pet.breed, selected_pet.weight)
+    else:
+        default_duration = 20
+
     with st.form(f"add_{category}_task_form", clear_on_submit=True):
         date_col, staff_col = st.columns(2)
         with date_col:
@@ -172,7 +181,7 @@ def render_category_booking_form(category: str, display_name: str, active_staff,
             duration, priority = 60, "medium"
             submitted = st.form_submit_button("Dog Cafe RSVP")
         else:
-            duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=20)
+            duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=default_duration)
             priority = st.selectbox("Priority", ["high", "medium", "low"])
             submitted = st.form_submit_button(f"Add {display_name} task(s)")
 

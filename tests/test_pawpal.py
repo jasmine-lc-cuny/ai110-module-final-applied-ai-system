@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from ai_system import advise_service
 from ai_applied_prediagnostic import assess_symptoms, recommend_doctor
 from ai_applied_medication_advisor import recommend_medication
+from grooming_duration import dog_size_tier, grooming_duration_minutes
 from pawpal_system import (
     Appointment,
     Clinic,
@@ -587,6 +588,36 @@ def test_medication_advisor_falls_back_when_no_condition_matches():
 
     assert recommendation.medication is None
     assert "curated" in recommendation.explanation.lower()
+
+
+def test_dog_size_tier_prefers_breed_over_weight():
+    assert dog_size_tier("Great Dane", "20 lbs") == "giant"
+    assert dog_size_tier("Chihuahua", "150 lbs") == "small"
+
+
+def test_dog_size_tier_falls_back_to_weight_for_unknown_breed():
+    assert dog_size_tier("Xoloitzcuintli", "15 lbs") == "small"
+    assert dog_size_tier("Xoloitzcuintli", "65 lbs") == "large"
+    assert dog_size_tier("Xoloitzcuintli", "200 lbs") == "giant"
+
+
+def test_dog_size_tier_defaults_to_medium_with_no_breed_or_weight():
+    assert dog_size_tier(None, None) == "medium"
+    assert dog_size_tier("Xoloitzcuintli", None) == "medium"
+
+
+def test_grooming_duration_scales_with_dog_size():
+    small_duration = grooming_duration_minutes("dog", "Chihuahua")
+    giant_duration = grooming_duration_minutes("dog", "Great Dane")
+
+    assert 60 <= small_duration <= 120
+    assert 180 <= giant_duration <= 240
+
+
+def test_grooming_duration_for_cats_is_a_short_flat_range():
+    for _ in range(20):
+        duration = grooming_duration_minutes("cat", "Persian")
+        assert 30 <= duration <= 60
 
 
 def test_pet_round_trips_profile_fields():
