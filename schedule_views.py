@@ -51,6 +51,49 @@ def _add_hours(time_str: str, hours: int) -> str:
     return f"{hour:02d}:{minute:02d}"
 
 
+def _render_windowed_table(
+    tasks: list[tuple],
+    *,
+    windowed: bool,
+    window_end: str | None,
+    include_reason: bool,
+    session_key: str,
+    empty_message: str = "No tasks due today match the current filters.",
+) -> None:
+    """Render a task table; when windowed, only show tasks up to `window_end`
+    (HH:MM) with a Show more/Show less toggle. `window_end` is computed once
+    from the day's earliest task so every section on the page (chronological
+    or priority-sorted) collapses to the same time cutoff."""
+    if not tasks:
+        st.info(empty_message)
+        return
+
+    if not windowed or window_end is None:
+        st.table(task_rows(tasks, include_reason=include_reason))
+        return
+
+    expanded_key = f"{session_key}_expanded"
+    if expanded_key not in st.session_state:
+        st.session_state[expanded_key] = False
+
+    if st.session_state[expanded_key]:
+        visible_tasks = tasks
+    else:
+        visible_tasks = [pair for pair in tasks if pair[1].time <= window_end]
+
+    st.table(task_rows(visible_tasks, include_reason=include_reason))
+    hidden_count = len(tasks) - len(visible_tasks)
+
+    if st.session_state[expanded_key]:
+        if st.button("Show less", key=f"{session_key}_show_less"):
+            st.session_state[expanded_key] = False
+            st.rerun()
+    elif hidden_count > 0:
+        if st.button(f"Show more ({hidden_count} more today)", key=f"{session_key}_show_more"):
+            st.session_state[expanded_key] = True
+            st.rerun()
+
+
 def render_todays_schedule_page(
     *,
     page_icon: str,
@@ -59,7 +102,7 @@ def render_todays_schedule_page(
     categories: set[str] | None,
     include_reason: bool,
     windowed: bool = False,
-    window_hours: int = 2,
+    window_hours: int = 1,
 ) -> None:
     """Render a full today's-schedule page scoped to the given task categories."""
     owner = get_combined_owner()
@@ -96,41 +139,26 @@ def render_todays_schedule_page(
         [pair for pair in scoped_pairs if pair[1].due_date == today and _matches(*pair)]
     )
 
+    window_end = _add_hours(todays_tasks[0][1].time, window_hours) if todays_tasks else None
+
     st.subheader(f"{page_icon} {page_title}")
-    if todays_tasks:
-        if windowed:
-            expanded_key = f"{page_title}_schedule_expanded"
-            if expanded_key not in st.session_state:
-                st.session_state[expanded_key] = False
-
-            if st.session_state[expanded_key]:
-                visible_tasks = todays_tasks
-            else:
-                window_end = _add_hours(todays_tasks[0][1].time, window_hours)
-                visible_tasks = [pair for pair in todays_tasks if pair[1].time <= window_end]
-
-            st.table(task_rows(visible_tasks, include_reason=include_reason))
-            hidden_count = len(todays_tasks) - len(visible_tasks)
-
-            if st.session_state[expanded_key]:
-                if st.button("Show less", key=f"{page_title}_show_less"):
-                    st.session_state[expanded_key] = False
-                    st.rerun()
-            elif hidden_count > 0:
-                if st.button(f"Show more ({hidden_count} more today)", key=f"{page_title}_show_more"):
-                    st.session_state[expanded_key] = True
-                    st.rerun()
-        else:
-            st.table(task_rows(todays_tasks, include_reason=include_reason))
-    else:
-        st.info("No tasks due today match the current filters.")
+    _render_windowed_table(
+        todays_tasks,
+        windowed=windowed,
+        window_end=window_end,
+        include_reason=include_reason,
+        session_key=f"{page_title}_schedule",
+    )
 
     st.markdown("**❗ High Priority First**")
     high_priority_today = scheduler.sort_by_priority_then_time(todays_tasks)
-    if high_priority_today:
-        st.table(task_rows(high_priority_today, include_reason=include_reason))
-    else:
-        st.info("No tasks due today match the current filters.")
+    _render_windowed_table(
+        high_priority_today,
+        windowed=windowed,
+        window_end=window_end,
+        include_reason=include_reason,
+        session_key=f"{page_title}_high_priority",
+    )
 
     st.markdown("**🚨 Next Urgent Task**")
     urgent = scheduler.next_urgent_task(todays_tasks)

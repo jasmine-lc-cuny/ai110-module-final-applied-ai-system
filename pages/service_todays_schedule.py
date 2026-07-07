@@ -9,5 +9,5 @@ render_todays_schedule_page(
     categories=SERVICE_CATEGORIES,
     include_reason=False,
     windowed=True,
-    window_hours=2,
+    window_hours=1,
 )
