@@ -80,6 +80,7 @@ pg = st.navigation(
         "": [st.Page(home_page, title="Home", icon="🏠", url_path="home", default=True)],
         "🐾 PawPal AI Streamlit": [
             st.Page("pages/dashboard.py", title="Pet Profile", icon="📊"),
+            st.Page("pages/breed_directory.py", title="Breed Directory", icon="📖"),
         ],
         "🛎️ Book a Service": [
             st.Page("pages/book_service_dashboard.py", title="Service Dashboard", icon="🛎️"),

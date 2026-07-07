@@ -2,6 +2,7 @@ import streamlit as st
 
 from pawpal_system import Owner, Pet, pet_species_icon
 from app_common import NEW_OWNER_CHOICE, get_owners, render_live_clock, save_owners
+from breed_personality import breed_personality
 
 SPECIES_OPTIONS = ["dog", "cat"]
 SEX_OPTIONS = ["Female", "Male"]
@@ -325,6 +326,7 @@ def render_patient_cards(patient_list):
             info_cols[3].metric("Status", pet.status)
             
             st.write(f"**Breed:** {pet.breed or '—'}")
+            st.write(f"**Personality:** {breed_personality(pet.species, pet.breed) or '—'}")
             st.write(f"**Weight:** {pet.weight or '—'}  |  **Height:** {pet.height or '—'}")
             st.write(f"**Color/Markings:** {pet.color_markings or '—'}")
             st.write(f"**Microchip #:** {pet.microchip_number or '—'}")

@@ -6,6 +6,7 @@ import streamlit as st
 
 from pawpal_system import format_time_12h, pet_species_icon, task_type_icon
 from app_common import get_owners, render_live_clock
+from breed_personality import breed_personality
 
 VET_ICONS = {"🏥", "💊"}
 
@@ -17,6 +18,7 @@ def render_info_card(owner, pet) -> None:
         st.write(f"**Name:** {pet.name}")
         st.write(f"**Owner:** {owner.name}")
         st.write(f"**Breed:** {pet.breed or '—'}")
+        st.write(f"**Personality:** {breed_personality(pet.species, pet.breed) or '—'}")
         st.write(f"**Weight:** {pet.weight or '—'}")
         st.write(f"**Sex:** {pet.sex or '—'}")
         st.write(f"**Age:** {pet.age if pet.age is not None else '—'}")
